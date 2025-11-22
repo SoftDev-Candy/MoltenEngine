@@ -11,8 +11,15 @@
 class Scene
 {
 public:
-    void Add(Renderable* onj){objects.push_back(obj);}
-    const std::vector<Renderable*>& GetObjects() const{return objects};
+    void Add(Renderable* obj)
+    {
+        objects.push_back(obj);
+    }
+
+    const std::vector<Renderable*>& GetObjects() const
+    {
+        return objects;
+    }
 
 private:
     std::vector<Renderable*>objects;

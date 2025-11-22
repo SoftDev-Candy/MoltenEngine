@@ -19,6 +19,10 @@ add_executable(B_WEngine src/main.cpp
         src/Scene.hpp
         src/ShaderSource.cpp
         src/ShaderSource.hpp
+        src/Renderer.cpp
+        src/Renderer.hpp
+        src/EngineContext.cpp
+        src/EngineContext.hpp
 )
 
 find_package(OpenGL REQUIRED)
