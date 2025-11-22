@@ -4,6 +4,10 @@
 
 #include "EngineContext.hpp"
 
+static void framebuffer_size_callback(GLFWwindow* , int w , int h)
+{
+    glViewport(0,0,w,h);
+}
 
 void EngineContext::init()
 {
@@ -33,6 +37,7 @@ void EngineContext::init()
     //making window the current context //
     glfwMakeContextCurrent(window);
 
+    glfwSetFramebufferSizeCallback(window ,framebuffer_size_callback);
     //Initialize Glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
