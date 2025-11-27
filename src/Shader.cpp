@@ -19,11 +19,11 @@ GLuint fs = CompileSingle(GL_FRAGMENT_SHADER ,FragmentSrc);
 
     GLint success;
     GLchar infoLog[512];
-    glGetShaderiv(m_id,GL_LINK_STATUS, &success);
+    glGetProgramiv(m_id,GL_LINK_STATUS, &success);
 
     if (!success)
     {
-        glGetShaderInfoLog(m_id,512,nullptr,infoLog);
+        glGetProgramInfoLog(m_id,512,nullptr,infoLog);
         std::cerr<<"Shader program link error:\n"<<infoLog<<std::endl;
     }
 
@@ -35,6 +35,12 @@ glDeleteShader(fs);
 void Shader::bind() const
 {
 glUseProgram(m_id);
+}
+
+void Shader::setMat4(const std::string &name, const glm::mat4& mat)
+{
+    GLint loc = glGetUniformLocation(m_id,name.c_str());
+    glUniformMatrix4fv(loc,1,GL_FALSE ,glm::value_ptr(mat));
 }
 
 GLuint Shader::CompileSingle(GLenum type, const char *src)

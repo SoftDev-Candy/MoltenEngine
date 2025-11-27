@@ -4,11 +4,13 @@
 
 #ifndef B_WENGINE_CUBE_HPP
 #define B_WENGINE_CUBE_HPP
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include"Renderable.hpp"
 #include "Shader.hpp"
-#include <glad/glad.h>
 
-class Cube
+class Cube :public Renderable
 {
 public:
 
@@ -23,7 +25,6 @@ private:
     unsigned int EBO;
 
 Shader shader;
-
 
 };
 

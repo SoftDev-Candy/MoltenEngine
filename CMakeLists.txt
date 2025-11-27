@@ -38,6 +38,7 @@ target_link_libraries( B_WEngine PRIVATE
 target_include_directories(B_WEngine PRIVATE
         external/glad/include
         external/glfw/include
+        external/glm
 )
 
 #Had an error so basically need to tell the linker its a console app and we are not going to be using winmain() but just main()

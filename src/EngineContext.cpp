@@ -47,6 +47,9 @@ void EngineContext::init()
 
     glViewport(0,0,800,800); //This is the viewport or the drawable size area
 
+    //Depth test dont worry about until it throws error//
+    glEnable(GL_DEPTH_TEST);
+
 }
 
 bool EngineContext::ShouldClose()
