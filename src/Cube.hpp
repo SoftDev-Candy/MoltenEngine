@@ -17,7 +17,7 @@ public:
     Cube();//Constructor big man //
     ~Cube();//No so constructor//
 
-    void Render()override;
+    void Render(const glm::mat4& mvp)override;
 
 private:
     unsigned int VAO;

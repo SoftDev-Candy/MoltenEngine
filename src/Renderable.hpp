@@ -4,11 +4,11 @@
 
 #ifndef B_WENGINE_RENDERABLE_HPP
 #define B_WENGINE_RENDERABLE_HPP
-
+#include "glm/ext/matrix_transform.hpp"
 class Renderable
 {
 public:
-    virtual void Render() = 0;
+    virtual void Render(glm::mat4& mvp) = 0;
     virtual ~Renderable() = default;
 
 };

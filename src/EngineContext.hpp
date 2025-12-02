@@ -5,16 +5,19 @@
 #ifndef B_WENGINE_ENGINECONTEXT_HPP
 #define B_WENGINE_ENGINECONTEXT_HPP
 #include<iostream>
-#include "Shader.hpp"
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include "Renderer.hpp"
 #include "Scene.hpp"
+#include "Camera.hpp"
+#include "Shader.hpp"
 
 class EngineContext
 {
 
 public:
+//Creating Camera object
+Camera camera;
 
     void init();
     bool ShouldClose();

@@ -5,12 +5,13 @@
 #ifndef B_WENGINE_RENDER_HPP
 #define B_WENGINE_RENDER_HPP
 #include "Scene.hpp"
-
+#include "Camera.hpp"
 class Renderer
 {
 public:
+
     void Begin();
-    void RenderScene(const Scene& scene);
+    void RenderScene(Scene& scene , Camera& camera);
 
 };
 

@@ -70,28 +70,27 @@ Cube::~Cube()
 
 }
 
-void Cube::Render()
+ void Cube::Render(const glm::mat4& mvp)
 {
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate (model,
-          (float)glfwGetTime(),
-        glm::vec3(0.5f,1.0f,0.0f));
-
-    glm::mat4 view = glm::lookAt(
-      glm::vec3(0.0f ,0.0f ,3.0f),
-    glm::vec3(0.0f ,0.0f ,0.0f),
-       glm::vec3(0.0f ,1.0f ,0.0f));
-
-    glm::mat4 projection = glm::perspective(
-         glm::radians(45.0f),
-         800.f/800.0f,
-         0.1f,
-         100.f);
-glm::mat4  mvp = projection * view * model;
+//     glm::mat4 model = glm::mat4(1.0f);
+//     model = glm::rotate (model,
+//           (float)glfwGetTime(),
+//         glm::vec3(0.5f,1.0f,0.0f));
+//
+//     glm::mat4 view = glm::lookAt(
+//       glm::vec3(0.0f ,0.0f ,3.0f),
+//     glm::vec3(0.0f ,0.0f ,0.0f),
+//        glm::vec3(0.0f ,1.0f ,0.0f));
+//
+//     glm::mat4 projection = glm::perspective(
+//          glm::radians(45.0f),
+//          800.f/800.0f,
+//          0.1f,
+//          100.f);
+// glm::mat4  mvp = projection * view * model;
 
     shader.bind();
-    shader.setMat4("MVP" ,mvp); //TODO -ADD THIS FUNCTION IN SHADER//
-
+    shader.setMat4("MVP" ,mvp);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES,36,GL_UNSIGNED_INT,0);
 }

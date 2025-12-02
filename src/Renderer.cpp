@@ -3,6 +3,7 @@
 //
 
 #include "Renderer.hpp"
+#include "Scene.hpp"
 #include <glad/glad.h>
 
 void Renderer::Begin()
@@ -11,11 +12,20 @@ void Renderer::Begin()
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);//Clearing the buffer to get the colour out.
 }
 
-void Renderer::RenderScene(const Scene &scene)
+void Renderer::RenderScene(Scene &scene , Camera& camera)
 {
-
-    for (auto* obj:scene.GetObjects())
+Camera& cam  = camera;
+    for (auto& obj:scene.GetObjects())
     {
-        obj->Render();
+
+        if (obj.renderable)
+        {
+            glm::mat4 model = obj.transform.GetMatrix();
+            glm::mat4 view = cam.GetView();
+            glm::mat4 projection = cam.GetProjection(800.0f , 800.0f);
+
+            glm::mat4 mvp = projection * view * model;
+            obj.renderable->Render(mvp);
+        }
     }
 }

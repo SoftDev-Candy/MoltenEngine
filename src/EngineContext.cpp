@@ -65,7 +65,7 @@ void EngineContext::update()
 void EngineContext::Render()
 {
     renderer.Begin();
-    renderer.RenderScene(scene);
+    renderer.RenderScene(scene ,camera);
     glfwSwapBuffers(window);//Swapping buffers to make colour come in front on the viewport.
 }
 
@@ -77,5 +77,5 @@ void EngineContext::Terminate()
 
 void EngineContext::AddObject(Renderable *object)
 {
-    scene.Add(object);
+    scene.CreateObject(object);
 }

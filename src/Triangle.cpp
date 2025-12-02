@@ -57,10 +57,12 @@ glDeleteBuffers(1,&VBO);
 
 }
 
-void Triangle::Render()
+void Triangle::Render(const glm::mat4& mvp)
 {
 
     shader.bind();
+    shader.setMat4("MVP" ,mvp);
+
     glBindVertexArray(VAO);
     //glDrawArrays(GL_TRIANGLES,0,3);
     glDrawElements(GL_TRIANGLES , 3 , GL_UNSIGNED_INT,0);

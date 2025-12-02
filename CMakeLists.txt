@@ -25,6 +25,12 @@ add_executable(B_WEngine src/main.cpp
         src/EngineContext.hpp
         src/Cube.cpp
         src/Cube.hpp
+        src/Transform.cpp
+        src/Transform.hpp
+        src/Entity.cpp
+        src/Entity.hpp
+        src/Camera.cpp
+        src/Camera.hpp
 )
 
 find_package(OpenGL REQUIRED)

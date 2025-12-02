@@ -17,7 +17,7 @@ public:
      Triangle();
     ~Triangle();
 
-    void Render() override;
+    void Render(const glm::mat4& mvp) override;
 
 
 private:
