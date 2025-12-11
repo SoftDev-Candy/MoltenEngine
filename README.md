@@ -2,13 +2,27 @@
 A basic C++ engine using OpenGL and GLFW built with CMake and CLion.
 
 ## Build
+
+**For windows Users**
 ```
-git clone https://github.com/SoftDev-Candy/GreyEngine.git
+mkdir B_WEngine
+git clone https://github.com/SoftDev-Candy/MoltenEngine.git
+mkdir build
+cd build
+cmake -G "Xcode" ..
+cmake --build . --config Release.
+```
+
+**For Mac Users**
+```
+mkdir B_WEngine
+git clone https://github.com/SoftDev-Candy/MoltenEngine.git
 cd B_WEngine
 mkdir build && cd build
 cmake ..
 cmake --build .
 ```
+
 ## Currently completed
 
 **✔️ EngineContext**
