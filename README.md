@@ -1,4 +1,4 @@
-# Black_WhiteEngine or GreyEngine
+# MoltenEngine
 A basic C++ engine using OpenGL and GLFW built with CMake and CLion.
 
 ## Build
