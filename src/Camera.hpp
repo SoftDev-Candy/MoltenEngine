@@ -22,11 +22,15 @@ public:
 
     glm::mat4 GetProjection(float width , float height)const
     {
-        return glm::perspective(glm::radians(45.0f),
+        return glm::perspective(glm::radians(this->fov),
                                         width / height,
                                         0.1f,
                                         100.0f);
     }
+
+    //Camera Viewing angles //
+    float fov = 45.0f;
+
 };
 
 

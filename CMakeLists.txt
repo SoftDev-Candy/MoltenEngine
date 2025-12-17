@@ -47,6 +47,8 @@ add_executable(B_WEngine src/main.cpp
         src/MeshComponent.hpp
         src/ShaderManager.cpp
         src/ShaderManager.hpp
+        src/ui/EditorStyle.cpp
+        src/ui/EditorStyle.hpp
 
 )
 

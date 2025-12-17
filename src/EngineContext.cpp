@@ -8,7 +8,6 @@
 #include"../external/imgui/imgui.h"
 #include"../external/imgui/imgui_impl_glfw.h"
 #include"../external/imgui/imgui_impl_opengl3.h"
-#include "../external/imgui/imgui_stdlib.h"
 
 
 static void framebuffer_size_callback(GLFWwindow* , int w , int h)
@@ -63,13 +62,16 @@ void EngineContext::init()
 
     glViewport(2,4,1000,800); //This is the viewport or the drawable size area
 
-    //Depth test dont worry about until it throws error//
+    //Depth test dont worry about it until it throws error....uhh then get a panic attack and! worry//
+    //from the future - Dont do the second part ⬆️
     glEnable(GL_DEPTH_TEST);
 
     //THIS IS IT FINALLY THE COSMIC CREATION OF THE MOTHERLAND STARDENBURDENHARDENBART DEAR IMGUI//
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
+    //Enabling Docking here
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; //Enabling Controller dont need it saw it sounds cool might keep it for now;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; //Enabling Keyboard
 
@@ -111,7 +113,6 @@ ImGui::StyleColorsLight();
 
     shadermanager.LoadShader("Default",VertexShaderSource,FragmentShaderSource);
     renderer.SetActiveShader(shadermanager.GetShader("Default"));
-
 
 }
 
@@ -178,6 +179,11 @@ ImGui::Begin("Scene Hierarchy");
 
     }
     ImGui::End();
+    ImGui::Begin("Camera FOV");
+    ImGui::SliderFloat("FOV",&camera.fov, 30.0f, 120.0f, "ratio = %.1f");
+    ImGui::End();
+
+
 
 
     float time = static_cast<float>(glfwGetTime());
@@ -229,13 +235,15 @@ void EngineContext::Render()
 
 void EngineContext::Terminate()
 {
-    glfwDestroyWindow(window);
-    glfwTerminate();
-
     //Destroy or Shut it down //
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+//Destroy Imgui before window otherwise it can cause various issues later //
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+
 }
 
 void EngineContext::AddObject()
