@@ -185,9 +185,6 @@ ImGui::Begin("Scene Hierarchy");
     UI::SliderFloatMolten("FOV", &camera.fov, 30.0f, 120.0f);
     ImGui::End();
 
-
-
-
     if (selectedIndex != -1)
     {
         auto& obj = scene.GetObjects()[selectedIndex];
