@@ -10,6 +10,7 @@
 #include "Renderer.hpp"
 #include "Scene.hpp"
 #include "Camera.hpp"
+#include "MeshManager.hpp"
 #include "Shader.hpp"
 #include "ShaderManager.hpp"
 #include "ui/UIManager.hpp"
@@ -30,6 +31,7 @@ Camera camera;
     Mesh* cubeMesh;
     ShaderManager shadermanager;
     UIManager ui;
+    MeshManager meshmanager;
 
 std::vector<SceneObject>& Getobject() ;
 

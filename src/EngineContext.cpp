@@ -24,7 +24,7 @@ Entity EngineContext::CreateCube(const std::string &cubename)
 
     scene.CreateObject();
     auto& obj = scene.GetObjects().back();
-    obj.mesh.mesh = cubeMesh;
+    obj.mesh.mesh = meshmanager.Get("Cube");
     obj.name = cubename;
 
     return obj.entity;
@@ -116,8 +116,9 @@ void EngineContext::init()
     //FIXME: this is getting too cryptic need to ask for a better solution for this
     //No one is going to understand this jargon //
     //....yeah pastme ---what was i doing here again bruv??//
-    cubeMesh= new Mesh(vertices, 40, indices,36);
-
+    cubeMesh= meshmanager.Add( "Cube",
+        std::make_unique<Mesh>(vertices, 40, indices,36)
+    );
     //FIXME - NEED A MESH MANAGER TO DELETE THIS //
 
     shadermanager.LoadShader("Default",VertexShaderSource,FragmentShaderSource);
