@@ -22,6 +22,8 @@ public:
 //Creating Camera object
 Camera camera;
     Entity CreateCube(const std::string& cubename);
+    Entity CreateEntityWithMesh(const std::string& name, const std::string& meshKey);
+
     void init();
     bool ShouldClose();
     void update();

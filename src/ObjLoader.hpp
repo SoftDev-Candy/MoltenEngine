@@ -16,10 +16,12 @@ struct ObjMeshData{
     std::vector<float>vertices;
     std::vector<unsigned int>indices;
 
+    bool hasUVs = false;
+    bool hasNormals = false;
 
 };
 
-ObjMeshData LoadOBJ(const std::string &path);
+ObjMeshData LoadOBJ(const std::string &path , bool isFlipped =false);
 
 
 #endif //B_WENGINE_OBJLOADER_HPP

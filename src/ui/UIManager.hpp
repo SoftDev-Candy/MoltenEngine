@@ -11,7 +11,10 @@ class UIManager
 {
 
 public:
-    void Draw(Scene& scene , Camera& camera , int& selectedIndex , std::function<Entity(const std::string&)>createCube);
+    void Draw(Scene& scene, Camera& camera, int& selectedIndex,
+              std::function<Entity(const std::string&)> createCube,
+              std::function<Entity(const std::string&)> createImported,
+              std::function<Mesh*(const std::string&)> getMeshByKey);
 
 private:
 

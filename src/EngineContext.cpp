@@ -3,7 +3,6 @@
 //
 
 #include "EngineContext.hpp"
-
 #include "ObjLoader.hpp"
 #include "ShaderSource.hpp"
 #include"../external/imgui/imgui.h"
@@ -11,7 +10,6 @@
 #include"../external/imgui/imgui_impl_opengl3.h"
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
-
 
 static void framebuffer_size_callback(GLFWwindow* , int w , int h)
 {
@@ -32,10 +30,23 @@ Entity EngineContext::CreateCube(const std::string &cubename)
 
 }
 
-void EngineContext::init()
+Entity EngineContext::CreateEntityWithMesh(const std::string &name, const std::string &meshKey)
 {
 
-    LoadOBJ("../assets/models/Cube.obj");
+    scene.CreateObject();
+    auto& obj = scene.GetObjects().back();
+
+    obj.name = name;
+
+    // we are adding this as a safety check so if meshkey is wrong or null. Renderer skip that schizer
+    obj.mesh.mesh = meshmanager.Get(meshKey);
+
+    return obj.entity;
+
+}
+
+void EngineContext::init()
+{
 
     //Initialize GLFW
 
@@ -128,6 +139,21 @@ void EngineContext::init()
     shadermanager.LoadShader("Default",VertexShaderSource,FragmentShaderSource);
     renderer.SetActiveShader(shadermanager.GetShader("Default"));
 
+
+    ObjMeshData imported = LoadOBJ("../assets/models/Cube2.obj", false);
+
+    if(!imported.vertices.empty() && !imported.indices.empty())
+    {
+        meshmanager.Add("ImportedOBJ",
+                        std::make_unique<Mesh>(
+                            imported.vertices.data(),
+                            imported.vertices.size(),     // float count
+                            imported.indices.data(),
+                            imported.indices.size()       // index count
+                        )
+        );
+    }
+
 }
 
 bool EngineContext::ShouldClose()
@@ -177,7 +203,14 @@ void EngineContext::update()
     {
         camera.position.y += 0.05f;
     }
-    ui.Draw(scene,camera,selectedIndex,[this](const std::string& name){return CreateCube("Cube");});
+
+    //Forgot calling a funnction what it is called .....uhhhhhhhhh
+    ui.Draw(scene, camera, selectedIndex,
+     [this](const std::string& name){ return CreateEntityWithMesh(name, "Cube"); },
+     [this](const std::string& name){ return CreateEntityWithMesh(name, "ImportedOBJ"); },
+     [this](const std::string& key){ return meshmanager.Get(key); }
+ );
+
 
 }
 
