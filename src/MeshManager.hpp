@@ -7,8 +7,8 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include <vector>
 #include "Mesh.hpp"
-
 
 class MeshManager
 {
@@ -22,6 +22,10 @@ public:
     Mesh* Add(const std::string key , std::unique_ptr<Mesh> mesh);
     Mesh* Get(const std::string& key);
     bool Has(const std::string& key) const; //Just a check incase we don't want errors to be thrown//
+    std::vector<std::string> Keys() const; //for UI listing
+    void Clear(); //IMPORTANT: delete GL stuff BEFORE context dies
+
+
 
 
 };

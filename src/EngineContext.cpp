@@ -11,6 +11,42 @@
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
 
+bool EngineContext::ImportTexture(const std::string& key, const std::string& path)
+{
+    //FIXME: if you import same key twice, it will just return existing (safe)//
+    Texture* t = textureManager.Add(key, std::make_unique<Texture>(path.c_str()));
+    return t != nullptr;
+}
+
+bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& path)
+{
+    ObjMeshData imported = LoadOBJ(path, false);
+
+    if (imported.vertices.empty() || imported.indices.empty())
+    {
+        std::cerr << "[EngineContext] ImportObjAsMesh failed: empty mesh data\n";
+        return false;
+    }
+
+    //FIXME: Mesh expects 5 floats per vertex (pos3 + uv2)//
+    if ((imported.vertices.size() % 5) != 0)
+    {
+        std::cerr << "[EngineContext] WARNING: OBJ vertices not multiple of 5 (pos+uv). Texture might be wrong.\n";
+    }
+
+    meshmanager.Add(key,
+        std::make_unique<Mesh>(
+            imported.vertices.data(),
+            imported.vertices.size(),
+            imported.indices.data(),
+            imported.indices.size()
+        )
+    );
+
+    return true;
+}
+
+
 static void framebuffer_size_callback(GLFWwindow* , int w , int h)
 {
 
@@ -20,19 +56,23 @@ static void framebuffer_size_callback(GLFWwindow* , int w , int h)
 
 Entity EngineContext::CreateCube(const std::string &cubename)
 {
-
     scene.CreateObject();
     auto& obj = scene.GetObjects().back();
     obj.mesh.mesh = meshmanager.Get("Cube");
+    obj.meshKey = "Cube"; //FIXME: UI needs this for drag/drop
+
     obj.name = cubename;
 
-    return obj.entity;
+    //Default texture per entity (so it NEVER shows up black by accident)//
+    obj.texture = textureManager.Get("Default");
+    obj.textureKey = "Default";
 
+    return obj.entity;
 }
+
 
 Entity EngineContext::CreateEntityWithMesh(const std::string &name, const std::string &meshKey)
 {
-
     scene.CreateObject();
     auto& obj = scene.GetObjects().back();
 
@@ -40,9 +80,13 @@ Entity EngineContext::CreateEntityWithMesh(const std::string &name, const std::s
 
     // we are adding this as a safety check so if meshkey is wrong or null. Renderer skip that schizer
     obj.mesh.mesh = meshmanager.Get(meshKey);
+    obj.meshKey = meshKey; //FIXME: UI needs this for drag/drop
+
+    //Default texture per entity (same logic as cube)//
+    obj.texture = textureManager.Get("Default");
+    obj.textureKey = "Default";
 
     return obj.entity;
-
 }
 
 void EngineContext::init()
@@ -140,9 +184,9 @@ void EngineContext::init()
     renderer.SetActiveShader(shadermanager.GetShader("Default"));
 
     //TODO: move this into TextureManager later, for now just prove pipeline works//
-    texture = new Texture("../assets/texture.png"); //FIXME: delete later / use unique_ptr later
+    texture = textureManager.Add("Default", std::make_unique<Texture>("../assets/texture.png"));
     renderer.SetActiveTexture(texture);
-
+    renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
 
 
     ObjMeshData imported = LoadOBJ("../assets/models/Cube2.obj", false);
@@ -209,12 +253,20 @@ void EngineContext::update()
         camera.position.y += 0.05f;
     }
 
-    //Forgot calling a funnction what it is called .....uhhhhhhhhh
     ui.Draw(scene, camera, selectedIndex,
-     [this](const std::string& name){ return CreateEntityWithMesh(name, "Cube"); },
-     [this](const std::string& name){ return CreateEntityWithMesh(name, "ImportedOBJ"); },
-     [this](const std::string& key){ return meshmanager.Get(key); }
- );
+    [this](const std::string& name){ return CreateEntityWithMesh(name, "Cube"); },
+    [this](const std::string& name){ return CreateEntityWithMesh(name, "ImportedOBJ"); },
+
+    //Meshes//
+    [this](const std::string& key){ return meshmanager.Get(key); },
+    [this](){ return meshmanager.Keys(); },
+    [this](const std::string& key, const std::string& path){ return ImportObjAsMesh(key, path); },
+
+    //Textures//
+    [this](const std::string& key){ return textureManager.Get(key); },
+    [this](){ return textureManager.Keys(); },
+    [this](const std::string& key, const std::string& path){ return ImportTexture(key, path); }
+);
 
 
 }
@@ -239,6 +291,11 @@ void EngineContext::Terminate()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    //FIXME: IMPORTANT - delete GL resources BEFORE context dies//
+    meshmanager.Clear();
+    textureManager.Clear();
+
 //Destroy Imgui before window otherwise it can cause various issues later //
     glfwDestroyWindow(window);
     glfwTerminate();

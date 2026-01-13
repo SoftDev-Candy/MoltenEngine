@@ -21,6 +21,8 @@ Shader(const char* VertexShader , const char* FragmentSrc);
     void setMat4 (const std::string& name ,const glm::mat4& mat);
     void setInt(const char* texture , int id);
 
+
+
 private:
 GLuint m_id; //openGl shader id
 GLuint CompileSingle(GLenum type , const char* src);

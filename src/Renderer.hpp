@@ -19,9 +19,14 @@ public:
     void SetActiveShader(Shader *s) ;
     void SetActiveTexture(Texture* t); //FIXME: later this becomes per-entity / material system
 
+    Texture* defaultTexture = nullptr;
+    void SetDefaultTexture(Texture* t);
+
+
 private:
     Shader* shaderptr = nullptr;
     Texture* textureptr = nullptr;//TODO--This shall disappear when a material system is in place.//
+
 
 };
 

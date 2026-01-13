@@ -44,11 +44,34 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
             }
             //texture Rendering//
             glActiveTexture(GL_TEXTURE0);
+            //texture Rendering//
+            glActiveTexture(GL_TEXTURE0);
 
-            if (textureptr != nullptr)
+            //Per-entity first, then fallback to engine texture, then fallback to default//
+            Texture* useTex = nullptr;
+
+            //1. If entity has its own texture use that//
+            if (obj.texture != nullptr)
             {
-                textureptr->Bind();
+                useTex = obj.texture;
             }
+            //2. Else use whatever EngineContext set as "active" texture//
+            else if (textureptr != nullptr)
+            {
+                useTex = textureptr;
+            }
+            //3. Else fallback default texture (optional)//
+            else
+            {
+                useTex = defaultTexture;
+            }
+
+            //Bind if we actually have one//
+            if (useTex != nullptr)
+            {
+                useTex->Bind();
+            }
+
             //FIXME- This is materialState dunno what that means but need to move it out from here when i Do//
             shaderptr->setInt("uTexture", 0);
 
@@ -67,4 +90,8 @@ void Renderer::SetActiveShader(Shader *s)
 void Renderer::SetActiveTexture(Texture *t)
 {
     textureptr = t;
+}
+void Renderer::SetDefaultTexture(Texture* t)
+{
+    defaultTexture = t;
 }

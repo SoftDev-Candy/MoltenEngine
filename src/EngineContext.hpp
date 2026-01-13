@@ -15,6 +15,7 @@
 #include "ShaderManager.hpp"
 #include "ui/UIManager.hpp"
 #include "Texture.hpp"
+#include "TextureManager.hpp"
 
 class EngineContext
 {
@@ -31,14 +32,23 @@ Camera camera;
     void Render();
     void Terminate();
     void AddObject();
+
+    std::vector<SceneObject>& Getobject() ;
+
+    //Texture helper Functions
+    bool ImportObjAsMesh(const std::string& key, const std::string& path);
+    bool ImportTexture(const std::string& key, const std::string& path);
+
+    //Mesh and Texture objs
     Mesh* cubeMesh;
-    ShaderManager shadermanager;
-    UIManager ui;
-    MeshManager meshmanager;
     Texture* texture;
 
+    //Respective Manager Objects
+    TextureManager textureManager;
+    ShaderManager shadermanager;
+    MeshManager meshmanager;
+    UIManager ui;
 
-std::vector<SceneObject>& Getobject() ;
 
 private:
 

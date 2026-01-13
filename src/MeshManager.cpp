@@ -2,7 +2,8 @@
 // Created by Candy on 1/3/2026.
 //
 #include "MeshManager.hpp"
-#include<utility>
+#include <utility>
+#include <algorithm>
 
 Mesh * MeshManager::Add(const std::string key, std::unique_ptr<Mesh> mesh)
 {
@@ -39,3 +40,21 @@ bool MeshManager::Has(const std::string &key) const
     return meshes.find(key) != meshes.end();
 
 }
+
+std::vector<std::string> MeshManager::Keys() const
+{
+    std::vector<std::string> out;
+    out.reserve(meshes.size());
+
+    for (const auto& kv : meshes)
+        out.push_back(kv.first);
+
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+void MeshManager::Clear()
+{
+    meshes.clear();
+}
+

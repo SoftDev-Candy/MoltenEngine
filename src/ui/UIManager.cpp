@@ -9,13 +9,38 @@
 #include "imgui_impl_opengl3.h"
 #include <cstring> // strcpy
 #include <string>  // std::to_string
+#include <vector>
+
+static std::string GetFileStem(const char* path)
+{
+    //FIXME: this is a tiny helper so you dont have to type keys like a caveman//
+    std::string s = path ? path : "";
+    if (s.empty()) return "Asset";
+
+    size_t slash = s.find_last_of("/\\");
+    if (slash != std::string::npos) s = s.substr(slash + 1);
+
+    size_t dot = s.find_last_of('.');
+    if (dot != std::string::npos) s = s.substr(0, dot);
+
+    if (s.empty()) s = "Asset";
+    return s;
+}
 
 void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
                      std::function<Entity(const std::string &)> createCube,
                      std::function<Entity(const std::string&)> createImported,
-                     std::function<Mesh*(const std::string&)> getMeshByKey)
-{
 
+                     //Meshes//
+                     std::function<Mesh*(const std::string&)> getMeshByKey,
+                     std::function<std::vector<std::string>()> listMeshKeys,
+                     std::function<bool(const std::string&, const std::string&)> importObjMesh,
+
+                     //Textures//
+                     std::function<Texture*(const std::string&)> getTextureByKey,
+                     std::function<std::vector<std::string>()> listTextureKeys,
+                     std::function<bool(const std::string&, const std::string&)> importTexture)
+{
     ImGui::Begin("Scene Hierarchy");
 
     // ---------------------------
@@ -49,6 +74,99 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
         if (clicked)
         {
             selectedIndex = i;
+        }
+    }
+
+    ImGui::End();
+
+    // ---------------------------
+    // ASSETS WINDOW (Meshes + Textures + Import)
+    //Teacher will love this because its "engine-y"//
+    // ---------------------------
+    ImGui::Begin("Assets");
+
+    //OBJ import (path + key)//
+    static char objPath[256] = "../assets/models/";
+    static char objKey[64]   = "";
+
+    ImGui::TextUnformatted("OBJ Import");
+    ImGui::InputText("##ObjPath", objPath, sizeof(objPath));
+    ImGui::InputText("##ObjKey",  objKey,  sizeof(objKey));
+    ImGui::SameLine();
+    if (ImGui::Button("Import OBJ"))
+    {
+        //If no key typed just use file name//
+        if (objKey[0] == '\0')
+        {
+            std::string stem = GetFileStem(objPath);
+            std::strncpy(objKey, stem.c_str(), sizeof(objKey));
+            objKey[sizeof(objKey) - 1] = '\0';
+        }
+
+        //FIXME: import function belongs to engine not UI, so we call callback//
+        importObjMesh(objKey, objPath);
+    }
+
+    ImGui::Separator();
+
+    //Texture import (path + key)//
+    static char texPath[256] = "../assets/";
+    static char texKey[64]   = "";
+
+    ImGui::TextUnformatted("Texture Import");
+    ImGui::InputText("##TexPath", texPath, sizeof(texPath));
+    ImGui::InputText("##TexKey",  texKey,  sizeof(texKey));
+    ImGui::SameLine();
+    if (ImGui::Button("Import Texture"))
+    {
+        //If no key typed just use file name//
+        if (texKey[0] == '\0')
+        {
+            std::string stem = GetFileStem(texPath);
+            std::strncpy(texKey, stem.c_str(), sizeof(texKey));
+            texKey[sizeof(texKey) - 1] = '\0';
+        }
+
+        importTexture(texKey, texPath);
+    }
+
+    ImGui::Separator();
+
+    //Mesh list (drag to Inspector -> Model)//
+    ImGui::TextUnformatted("Meshes (drag onto Model)");
+    {
+        std::vector<std::string> keys = listMeshKeys();
+        for (const std::string& k : keys)
+        {
+            ImGui::Selectable(k.c_str());
+
+            //Drag source//
+            if (ImGui::BeginDragDropSource())
+            {
+                ImGui::SetDragDropPayload("MESH_KEY", k.c_str(), k.size() + 1);
+                ImGui::Text("Mesh: %s", k.c_str());
+                ImGui::EndDragDropSource();
+            }
+        }
+    }
+
+    ImGui::Separator();
+
+    //Texture list (drag to Inspector -> Texture)//
+    ImGui::TextUnformatted("Textures (drag onto Texture)");
+    {
+        std::vector<std::string> keys = listTextureKeys();
+        for (const std::string& k : keys)
+        {
+            ImGui::Selectable(k.c_str());
+
+            //Drag source//
+            if (ImGui::BeginDragDropSource())
+            {
+                ImGui::SetDragDropPayload("TEX_KEY", k.c_str(), k.size() + 1);
+                ImGui::Text("Texture: %s", k.c_str());
+                ImGui::EndDragDropSource();
+            }
         }
     }
 
@@ -100,22 +218,9 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
             UI::EndMoltenInput();
 
             // ---------------------------
-            // OPTIONAL: Model selection (Cube / ImportedOBJ)
+            // Model (Combo + DragDrop)
             // ---------------------------
             {
-                //This is the engine part: we compare pointers, not strings everywhere//
-                //We ask engine for mesh pointers via callback (so UI is not tightly coupled to MeshManager)//
-                Mesh* cubeMesh = getMeshByKey("Cube");
-                Mesh* importedMesh = getMeshByKey("ImportedOBJ");
-
-                //TODO: later this becomes a dynamic asset list not hardcoded 2 options//
-                const char* models[] = { "Cube", "ImportedOBJ" };
-                int modelIndex = 0;
-
-                //If this object is using imported mesh -> index 1, else default to cube//
-                if (obj.mesh.mesh == importedMesh)
-                    modelIndex = 1;
-
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::AlignTextToFramePadding();
@@ -124,16 +229,107 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
                 ImGui::TableSetColumnIndex(1);
                 ImGui::SetNextItemWidth(-FLT_MIN);
 
-                if (ImGui::Combo("##Model", &modelIndex, models, IM_ARRAYSIZE(models)))
-                {
-                    //Swap mesh pointer based on dropdown selection//
-                    if (modelIndex == 0)
-                        obj.mesh.mesh = cubeMesh;
-                    else
-                        obj.mesh.mesh = importedMesh;
+                std::vector<std::string> keys = listMeshKeys();
+                std::vector<const char*> labels;
+                labels.reserve(keys.size());
 
-                    //FIXME: if mesh is nullptr it will just not render (safe)
-                    //But later we should show warning in UI//
+                int currentIndex = 0;
+                for (int i = 0; i < (int)keys.size(); i++)
+                {
+                    labels.push_back(keys[i].c_str());
+                    if (keys[i] == obj.meshKey)
+                        currentIndex = i;
+                }
+
+                if (!labels.empty())
+                {
+                    if (ImGui::Combo("##Model", &currentIndex, labels.data(), (int)labels.size()))
+                    {
+                        Mesh* m = getMeshByKey(keys[currentIndex]);
+                        if (m != nullptr)
+                        {
+                            obj.mesh.mesh = m;
+                            obj.meshKey = keys[currentIndex];
+                        }
+                    }
+                }
+                else
+                {
+                    ImGui::TextUnformatted("No meshes loaded");
+                }
+
+                //Drag target for meshes//
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MESH_KEY"))
+                    {
+                        const char* droppedKey = (const char*)payload->Data;
+                        Mesh* m = getMeshByKey(droppedKey);
+                        if (m != nullptr)
+                        {
+                            obj.mesh.mesh = m;
+                            obj.meshKey = droppedKey;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+            }
+
+            // ---------------------------
+            // Texture (Combo + DragDrop)
+            // ---------------------------
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextUnformatted("Texture");
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+
+                std::vector<std::string> keys = listTextureKeys();
+                std::vector<const char*> labels;
+                labels.reserve(keys.size());
+
+                int currentIndex = 0;
+                for (int i = 0; i < (int)keys.size(); i++)
+                {
+                    labels.push_back(keys[i].c_str());
+                    if (keys[i] == obj.textureKey)
+                        currentIndex = i;
+                }
+
+                if (!labels.empty())
+                {
+                    if (ImGui::Combo("##Texture", &currentIndex, labels.data(), (int)labels.size()))
+                    {
+                        Texture* t = getTextureByKey(keys[currentIndex]);
+                        if (t != nullptr)
+                        {
+                            obj.texture = t;
+                            obj.textureKey = keys[currentIndex];
+                        }
+                    }
+                }
+                else
+                {
+                    ImGui::TextUnformatted("No textures loaded");
+                }
+
+                //Drag target for textures//
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEX_KEY"))
+                    {
+                        const char* droppedKey = (const char*)payload->Data;
+                        Texture* t = getTextureByKey(droppedKey);
+                        if (t != nullptr)
+                        {
+                            obj.texture = t;
+                            obj.textureKey = droppedKey;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
                 }
             }
 
