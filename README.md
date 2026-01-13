@@ -128,7 +128,7 @@ Rendering (Cube / Scene)
 TODO- ADD images here 
 
 ## Project Structure (Target Shape)
-
+```
 src/
   EngineContext.*      # init + main loop orchestration
   Renderer.*           # draw loop + (MVP) setup
@@ -155,6 +155,8 @@ assets/
   models/
 docs/
   screenshots/
+
+```
   
 ## Architecture Highlights (High-Level)
 **Data Flow**
