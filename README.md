@@ -1,14 +1,15 @@
 # MoltenEngine
-A basic **C++17** engine using **OpenGL + GLFW**, built with **CMake** (developed in **CLion**).  
+A basic **C++20** engine using **OpenGL + GLFW**, built with **CMake** (developed in **CLion**).  
 Goal: a clean learning engine that grows toward an **editor-style workflow** (Scene/Renderer/UI/Assets).
 
 ---
 
 ## Tech Stack
-- **C++17**, **OpenGL 3.3 Core**
+- **C++ 20**, **OpenGL 3.3 Core**
 - **GLFW**, **GLAD**, **GLM**
 - Build: **CMake**
 - IDE: **CLion** (Windows: MinGW or MSVC)
+- Linux - Woring on it will(Update Soon)
 
 ---
 
@@ -191,7 +192,7 @@ Must-have
  Message queue
  Memory checking utilities
 
-# Nice-to-have (VG ideas)
+# Nice-to-have(Add-ons after inital setup)
  Scene serialization
  Better resource pipeline
  Triangulation / quad handling
