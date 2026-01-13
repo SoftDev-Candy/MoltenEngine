@@ -29,6 +29,8 @@ compile_commands.json
 *.swp
 *.bak
 
+!/assets/
+
 # ---- OS junk ----
 .DS_Store
 Thumbs.db
