@@ -75,6 +75,8 @@ add_executable(B_WEngine src/main.cpp
         src/message/DeleteEntityMessage.hpp
         src/message/SetEntityMeshMessage.cpp
         src/message/SetEntityMeshMessage.hpp
+        src/message/SetEntityTextureMessage.cpp
+        src/message/SetEntityTextureMessage.hpp
 
 )
 

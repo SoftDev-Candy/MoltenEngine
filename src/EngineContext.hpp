@@ -17,6 +17,8 @@
 #include "Texture.hpp"
 #include "TextureManager.hpp"
 #include "message/MessageQueue.hpp"
+#include "message/Message.hpp"
+#include <memory>
 
 class EngineContext
 {
@@ -54,6 +56,9 @@ Camera camera;
 
     //Delete Function
     bool DeleteSelectedObject();
+
+    void PushMessage(std::unique_ptr<Message> msg);
+
 
 
 

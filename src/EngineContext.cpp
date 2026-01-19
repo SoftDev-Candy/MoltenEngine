@@ -8,9 +8,12 @@
 #include"../external/imgui/imgui.h"
 #include"../external/imgui/imgui_impl_glfw.h"
 #include"../external/imgui/imgui_impl_opengl3.h"
+#include "message/CreateEntityMessage.hpp"
+#include "message/DeleteEntityMessage.hpp"
 #include "message/FileDroppedMessage.hpp"
 #include "message/ImportMeshMessage.hpp"
 #include "message/ImportTextureMessage.hpp"
+#include "message/SetEntityMeshMessage.hpp"
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
 
@@ -47,6 +50,11 @@ bool EngineContext::ImportTexture(const std::string& key, const std::string& pat
         return true;
     }
 
+void EngineContext::PushMessage(std::unique_ptr<Message> msg)
+{
+    messagequeue.Push(std::move(msg));
+
+}
 
 
 bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& path)
@@ -285,43 +293,59 @@ void EngineContext::update()
     }
 
     ui.Draw(scene, camera, selectedIndex,
-    [this](const std::string& name){ return CreateEntityWithMesh(name, "Cube"); },
-    [this](const std::string& name){ return CreateEntityWithMesh(name, "ImportedOBJ"); },
 
-    //Meshes//
-    [this](const std::string& key){ return meshmanager.Get(key); },
-    [this](){ return meshmanager.Keys(); },
-    [this](const std::string& key, const std::string& path){ return ImportObjAsMesh(key, path); },
+        //Meshes (read-only queries)
+        [this](const std::string& key){ return meshmanager.Get(key); },
+        [this](){ return meshmanager.Keys(); },
 
-    //Textures//
-    [this](const std::string& key){ return textureManager.Get(key); },
-    [this](){ return textureManager.Keys(); },
-    [this](const std::string& key, const std::string& path)
-    {
-        return ImportTexture(key, path);
-    },
-    //Delete
-    [this](){ return DeleteSelectedObject();}
-);
+        //Textures (read-only queries)
+        [this](const std::string& key){ return textureManager.Get(key); },
+        [this](){ return textureManager.Keys(); },
 
+        //Push message (the only "action" UI can do)
+        [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); }
+    );
     // ---------------------------
-    // Message Pump: handle everything UI requested this frame
+    // Message Pump: UI asks, Engine does.
     // ---------------------------
     auto msgs = messagequeue.PopAll();
     for (auto& m : msgs)
     {
-        //File dropped / path based import etc
-        if (auto* drop = dynamic_cast<FileDroppedMessage*>(m.get()))
+        if (auto* c = dynamic_cast<CreateEntityMessage*>(m.get()))
         {
-            //TODO: for now just print, later decide:
-            // - if it's .obj => import mesh
-            // - if it's .png/.jpg => import texture
-            for (auto& p : drop->paths)
-            {lets
-                std::cout << "[Message] Dropped: " << p << "\n";
+            CreateEntityWithMesh(c->name, c->meshKey);
+        }
+        else if (auto* d = dynamic_cast<DeleteEntityMessage*>(m.get()))
+        {
+            //TODO: make sure Scene has a DeleteEntity(Entity) method (below)
+            scene.DestroyObject(d->entity);
+            scene.DestroyObjectAt(selectedIndex);
+        }
+        else if (auto* sm = dynamic_cast<SetEntityMeshMessage*>(m.get()))
+        {
+            //Find the object and swap its mesh pointer
+            auto& objects = scene.GetObjects();
+            for (auto& obj : objects)
+            {
+                if (obj.entity.Id == sm->entity.Id)
+                {
+                    obj.mesh.mesh = meshmanager.Get(sm->meshKey);
+                    break;
+                }
             }
         }
-
+        else if (auto* st = dynamic_cast<SetEntityTextureMessage*>(m.get()))
+        {
+            auto& objects = scene.GetObjects();
+            for (auto& obj : objects)
+            {
+                if (obj.entity.id == st->entity.id)
+                {
+                    obj.texture = textureManager.Get(st->textureKey);
+                    break;
+                }
+            }
+        }
         else if (auto* im = dynamic_cast<ImportMeshMessage*>(m.get()))
         {
             ImportObjAsMesh(im->key, im->path);

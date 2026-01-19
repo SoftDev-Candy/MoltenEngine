@@ -77,6 +77,29 @@ Entity CreateObject()
     return false;
 }
 
+//Improved delete
+    bool DeleteEntity(Entity e, int& selectedIndex)
+{
+    for (int i = 0; i < (int)objects.size(); i++)
+    {
+        if (objects[i].entity.Id == e.Id)
+        {
+            objects.erase(objects.begin() + i);
+
+            //Fix selection so it doesn't point into the void
+            if (objects.empty())
+                selectedIndex = -1;
+            else if (selectedIndex >= (int)objects.size())
+                selectedIndex = (int)objects.size() - 1;
+            else if (selectedIndex == i)
+                selectedIndex = -1;
+
+            return true;
+        }
+    }
+    return false;
+}
+
 
 private:
 
