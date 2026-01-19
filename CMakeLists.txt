@@ -59,6 +59,22 @@ add_executable(B_WEngine src/main.cpp
         src/ObjLoader.hpp
         src/TextureManager.cpp
         src/TextureManager.hpp
+        src/Message/Message.cpp
+        src/Message/Message.hpp
+        src/message/FileDroppedMessage.cpp
+        src/message/FileDroppedMessage.hpp
+        src/message/MessageQueue.cpp
+        src/message/MessageQueue.hpp
+        src/message/ImportMeshMessage.cpp
+        src/message/ImportMeshMessage.hpp
+        src/message/ImportTextureMessage.cpp
+        src/message/ImportTextureMessage.hpp
+        src/message/CreateEntityMessage.cpp
+        src/message/CreateEntityMessage.hpp
+        src/message/DeleteEntityMessage.cpp
+        src/message/DeleteEntityMessage.hpp
+        src/message/SetEntityMeshMessage.cpp
+        src/message/SetEntityMeshMessage.hpp
 
 )
 

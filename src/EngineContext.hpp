@@ -16,6 +16,7 @@
 #include "ui/UIManager.hpp"
 #include "Texture.hpp"
 #include "TextureManager.hpp"
+#include "message/MessageQueue.hpp"
 
 class EngineContext
 {
@@ -48,6 +49,12 @@ Camera camera;
     ShaderManager shadermanager;
     MeshManager meshmanager;
     UIManager ui;
+    MessageQueue messagequeue;
+
+
+    //Delete Function
+    bool DeleteSelectedObject();
+
 
 
 private:

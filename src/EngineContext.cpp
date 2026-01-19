@@ -8,6 +8,9 @@
 #include"../external/imgui/imgui.h"
 #include"../external/imgui/imgui_impl_glfw.h"
 #include"../external/imgui/imgui_impl_opengl3.h"
+#include "message/FileDroppedMessage.hpp"
+#include "message/ImportMeshMessage.hpp"
+#include "message/ImportTextureMessage.hpp"
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
 
@@ -17,6 +20,34 @@ bool EngineContext::ImportTexture(const std::string& key, const std::string& pat
     Texture* t = textureManager.Add(key, std::make_unique<Texture>(path.c_str()));
     return t != nullptr;
 }
+
+
+    bool EngineContext::DeleteSelectedObject()
+    {
+        //If nothing selected, do nothing
+        if (selectedIndex < 0 || selectedIndex >= (int)scene.GetObjects().size())
+        {
+            return false;
+        }
+
+        //Delete it
+        scene.DestroyObjectAt((size_t)selectedIndex);
+
+        //Fix selectedIndex so it doesn't point into garbage
+        int count = (int)scene.GetObjects().size();
+        if (count == 0)
+        {
+            selectedIndex = -1;
+        }
+        else if (selectedIndex >= count)
+        {
+            selectedIndex = count - 1;
+        }
+
+        return true;
+    }
+
+
 
 bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& path)
 {
@@ -265,8 +296,41 @@ void EngineContext::update()
     //Textures//
     [this](const std::string& key){ return textureManager.Get(key); },
     [this](){ return textureManager.Keys(); },
-    [this](const std::string& key, const std::string& path){ return ImportTexture(key, path); }
+    [this](const std::string& key, const std::string& path)
+    {
+        return ImportTexture(key, path);
+    },
+    //Delete
+    [this](){ return DeleteSelectedObject();}
 );
+
+    // ---------------------------
+    // Message Pump: handle everything UI requested this frame
+    // ---------------------------
+    auto msgs = messagequeue.PopAll();
+    for (auto& m : msgs)
+    {
+        //File dropped / path based import etc
+        if (auto* drop = dynamic_cast<FileDroppedMessage*>(m.get()))
+        {
+            //TODO: for now just print, later decide:
+            // - if it's .obj => import mesh
+            // - if it's .png/.jpg => import texture
+            for (auto& p : drop->paths)
+            {lets
+                std::cout << "[Message] Dropped: " << p << "\n";
+            }
+        }
+
+        else if (auto* im = dynamic_cast<ImportMeshMessage*>(m.get()))
+        {
+            ImportObjAsMesh(im->key, im->path);
+        }
+        else if (auto* it = dynamic_cast<ImportTextureMessage*>(m.get()))
+        {
+            ImportTexture(it->key, it->path);
+        }
+    }
 
 
 }

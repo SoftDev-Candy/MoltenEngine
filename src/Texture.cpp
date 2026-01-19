@@ -18,6 +18,7 @@ Texture::Texture(const char *path)
     int channels;
 
   unsigned char* storedata =  stbi_load(path , &width , &height, &channels,0);
+
     GLenum internalFormat = 0;
     GLenum dataFormat = 0;
 if (channels == 3)
@@ -67,6 +68,8 @@ glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
      storedata          // the pixel pointer (storedata)
  );
     glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_set_flip_vertically_on_load(true);
+
 
     stbi_image_free(storedata);
 

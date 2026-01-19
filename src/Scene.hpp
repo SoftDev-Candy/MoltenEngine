@@ -49,6 +49,35 @@ Entity CreateObject()
         return objects;
     }
 
+    //Delete by index (UI uses selectedIndex a lot so this is easiest)
+    bool DestroyObjectAt(size_t index)
+{
+    if (index >= objects.size())
+    {
+        return false;
+    }
+
+    objects.erase(objects.begin() + index);
+    return true;
+}
+
+    //Optional: Delete by Entity (handy later)
+    bool DestroyObject(Entity e)
+{
+    for (size_t i = 0; i < objects.size(); i++)
+    {
+        //If this line errors, it means your Entity doesn't have ".id"
+        //Then change it to whatever your ID field is.
+        if (objects[i].entity.Id == e.Id)
+        {
+            objects.erase(objects.begin() + i);
+            return true;
+        }
+    }
+    return false;
+}
+
+
 private:
 
     std::vector<SceneObject>objects;

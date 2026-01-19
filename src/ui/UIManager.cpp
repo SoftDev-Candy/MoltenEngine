@@ -39,7 +39,10 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
                      //Textures//
                      std::function<Texture*(const std::string&)> getTextureByKey,
                      std::function<std::vector<std::string>()> listTextureKeys,
-                     std::function<bool(const std::string&, const std::string&)> importTexture)
+                     std::function<bool(const std::string&, const std::string&)> importTexture,
+                     //Delete
+                     std::function<bool()> deleteSelectedObject
+                     )
 {
     ImGui::Begin("Scene Hierarchy");
 
@@ -63,6 +66,17 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
         //FIXME: this name is cringe but it works so we move//
         createImported("Imported_" + std::to_string(importedCounter++));
     }
+
+    ImGui::SameLine();
+
+    // ---------------------------
+    // DELETE BUTTON
+    // ---------------------------
+    if (ImGui::Button("Delete Selected"))
+    {
+        deleteSelectedObject();
+    }
+
 
     ImGui::Separator();
 
