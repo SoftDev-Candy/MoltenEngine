@@ -13,8 +13,10 @@ struct CreateEntityMessage final : public Message
     std::string name;
     std::string meshKey;
 
-    CreateEntityMessage(std::string n, std::string m)
-        : name(std::move(n)), meshKey(std::move(m)) {}
+    CreateEntityMessage(std::string n, std::string mk)
+        : name(std::move(n)), meshKey(std::move(mk)) {}
+
+    void Dispatch(EngineContext& engine) override;
 };
 
 #endif //B_WENGINE_CREATEENTITYMESSAGE_HPP

@@ -3,3 +3,9 @@
 //
 
 #include "SetEntityMeshMessage.hpp"
+#include "../EngineContext.hpp"
+
+void SetEntityMeshMessage::Dispatch(EngineContext& engine)
+{
+    engine.SetEntityMesh(entity, meshKey);
+}

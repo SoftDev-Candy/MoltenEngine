@@ -3,3 +3,9 @@
 //
 
 #include "ImportMeshMessage.hpp"
+#include "../EngineContext.hpp"
+
+void ImportMeshMessage::Dispatch(EngineContext& engine)
+{
+    engine.ImportObjAsMesh(key, path);
+}

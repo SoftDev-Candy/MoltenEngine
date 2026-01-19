@@ -3,3 +3,10 @@
 //
 
 #include "DeleteEntityMessage.hpp"
+#include "../EngineContext.hpp"
+
+void DeleteEntityMessage::Dispatch(EngineContext &engine)
+{
+    engine.DeleteEntity(entity);
+
+}

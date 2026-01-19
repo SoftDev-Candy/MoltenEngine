@@ -10,6 +10,14 @@
 #include <cstring> // strcpy
 #include <string>  // std::to_string
 #include <vector>
+#include "../message/CreateEntityMessage.hpp"
+#include "../message/DeleteEntityMessage.hpp"
+#include "../message/SetEntityMeshMessage.hpp"
+#include "../message/SetEntityTextureMessage.hpp"
+#include "../message/ImportMeshMessage.hpp"
+#include "../message/ImportTextureMessage.hpp"
+
+
 
 static std::string GetFileStem(const char* path)
 {
@@ -27,22 +35,12 @@ static std::string GetFileStem(const char* path)
     return s;
 }
 
-void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
-                     std::function<Entity(const std::string &)> createCube,
-                     std::function<Entity(const std::string&)> createImported,
-
-                     //Meshes//
+void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                      std::function<Mesh*(const std::string&)> getMeshByKey,
                      std::function<std::vector<std::string>()> listMeshKeys,
-                     std::function<bool(const std::string&, const std::string&)> importObjMesh,
-
-                     //Textures//
                      std::function<Texture*(const std::string&)> getTextureByKey,
                      std::function<std::vector<std::string>()> listTextureKeys,
-                     std::function<bool(const std::string&, const std::string&)> importTexture,
-                     //Delete
-                     std::function<bool()> deleteSelectedObject
-                     )
+                     std::function<void(std::unique_ptr<Message>)> pushMessage)
 {
     ImGui::Begin("Scene Hierarchy");
 
@@ -51,31 +49,47 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
     // ---------------------------
     static int cubeCounter = 0;
     static int importedCounter = 0;
-
     if (ImGui::Button("+ Add Cube"))
     {
-        //TODO: later we make a proper naming system / entity factory etc
-        //Right now this is just proof of life//
-        createCube("Cube_" + std::to_string(cubeCounter++));
+        pushMessage(std::make_unique<CreateEntityMessage>(
+            "Cube_" + std::to_string(cubeCounter++),
+            "Cube"
+        ));
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("+ Add Imported"))
     {
-        //FIXME: this name is cringe but it works so we move//
-        createImported("Imported_" + std::to_string(importedCounter++));
+        pushMessage(std::make_unique<CreateEntityMessage>(
+            "Imported_" + std::to_string(importedCounter++),
+            "ImportedOBJ"
+        ));
     }
+
 
     ImGui::SameLine();
 
     // ---------------------------
     // DELETE BUTTON
     // ---------------------------
+    // ---------------------------
+    // DELETE BUTTON
+    // ---------------------------
+    //FIXME: if nothing is selected we disable delete so we dont explode//
+    const bool hasSelection =
+        selectedIndex >= 0 && selectedIndex < (int)scene.GetObjects().size();
+
+    ImGui::BeginDisabled(!hasSelection);
+
     if (ImGui::Button("Delete Selected"))
     {
-        deleteSelectedObject();
+        auto& selectedObj = scene.GetObjects()[selectedIndex];
+        pushMessage(std::make_unique<DeleteEntityMessage>(selectedObj.entity));
+        selectedIndex = -1; //safety reset so inspector doesnt point to dead obj//
     }
+
+    ImGui::EndDisabled();
 
 
     ImGui::Separator();
@@ -118,7 +132,10 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
         }
 
         //FIXME: import function belongs to engine not UI, so we call callback//
-        importObjMesh(objKey, objPath);
+        pushMessage(std::make_unique<ImportMeshMessage>(
+            std::string(objKey),
+            std::string(objPath)
+        ));
     }
 
     ImGui::Separator();
@@ -141,7 +158,10 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
             texKey[sizeof(texKey) - 1] = '\0';
         }
 
-        importTexture(texKey, texPath);
+        pushMessage(std::make_unique<ImportTextureMessage>(
+            std::string(texKey),
+            std::string(texPath)
+        ));
     }
 
     ImGui::Separator();
@@ -186,8 +206,24 @@ void UIManager::Draw(Scene &scene, Camera &camera, int& selectedIndex,
 
     ImGui::End();
 
-    ImGui::Begin("Camera FOV");
+    ImGui::Begin("Camera");
+
+    //FOV//
     UI::SliderFloatMolten("FOV", &camera.fov, 30.0f, 120.0f);
+
+    ImGui::Separator();
+
+    //Position//
+    ImGui::DragFloat3("Position", &camera.position.x, 0.01f);
+
+    //Rotation//
+    //Pitch clamp is optional but recommended so it doesn't flip
+    ImGui::DragFloat3("Rotation", &camera.rotation.x, 0.10f);
+
+    //Optional clamps so camera doesn't go insane
+    if (camera.rotation.x > 89.0f) camera.rotation.x = 89.0f;
+    if (camera.rotation.x < -89.0f) camera.rotation.x = -89.0f;
+
     ImGui::End();
 
     //If nothing selected dont bother drawing inspector//

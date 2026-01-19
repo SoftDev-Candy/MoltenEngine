@@ -56,8 +56,13 @@ Camera camera;
 
     //Delete Function
     bool DeleteSelectedObject();
+    bool DeleteEntity(Entity e);
+
 
     void PushMessage(std::unique_ptr<Message> msg);
+    void ProcessMessages();
+    void SetEntityMesh(Entity e, const std::string& meshKey);
+    void SetEntityTexture(Entity e, const std::string& textureKey);
 
 
 

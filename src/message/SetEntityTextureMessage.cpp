@@ -3,3 +3,9 @@
 //
 
 #include "SetEntityTextureMessage.hpp"
+#include "../EngineContext.hpp"
+
+void SetEntityTextureMessage::Dispatch(EngineContext& engine)
+{
+    engine.SetEntityTexture(entity, textureKey);
+}

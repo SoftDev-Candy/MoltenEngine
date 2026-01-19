@@ -16,6 +16,8 @@ struct SetEntityTextureMessage final : public Message
 
     SetEntityTextureMessage(Entity e, std::string key)
         : entity(e), textureKey(std::move(key)) {}
+
+    void Dispatch(EngineContext& engine) override;
 };
 
 #endif //B_WENGINE_SETENTITYTEXTUREMESSAGE_HPP

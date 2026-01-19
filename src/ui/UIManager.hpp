@@ -7,6 +7,7 @@
 #include "../Camera.hpp"
 #include "../Scene.hpp"
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 

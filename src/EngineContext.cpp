@@ -14,6 +14,7 @@
 #include "message/ImportMeshMessage.hpp"
 #include "message/ImportTextureMessage.hpp"
 #include "message/SetEntityMeshMessage.hpp"
+#include "message/SetEntityTextureMessage.hpp"
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
 
@@ -22,6 +23,41 @@ bool EngineContext::ImportTexture(const std::string& key, const std::string& pat
     //FIXME: if you import same key twice, it will just return existing (safe)//
     Texture* t = textureManager.Add(key, std::make_unique<Texture>(path.c_str()));
     return t != nullptr;
+}
+void EngineContext::SetEntityMesh(Entity e, const std::string& meshKey)
+{
+    Mesh* m = meshmanager.Get(meshKey);
+    if (m == nullptr)
+        return;
+
+    auto& objects = scene.GetObjects();
+    for (auto& obj : objects)
+    {
+        if (obj.entity.Id == e.Id)
+        {
+            obj.mesh.mesh = m;
+            obj.meshKey = meshKey;
+            return;
+        }
+    }
+}
+
+void EngineContext::SetEntityTexture(Entity e, const std::string& textureKey)
+{
+    Texture* t = textureManager.Get(textureKey);
+    if (t == nullptr)
+        return;
+
+    auto& objects = scene.GetObjects();
+    for (auto& obj : objects)
+    {
+        if (obj.entity.Id == e.Id)
+        {
+            obj.texture = t;
+            obj.textureKey = textureKey;
+            return;
+        }
+    }
 }
 
 
@@ -53,6 +89,22 @@ bool EngineContext::ImportTexture(const std::string& key, const std::string& pat
 void EngineContext::PushMessage(std::unique_ptr<Message> msg)
 {
     messagequeue.Push(std::move(msg));
+
+}
+
+void EngineContext::ProcessMessages()
+{
+    //Grab everything pushed this frame (fast swap)
+    auto msgs = messagequeue.PopAll();
+
+    //Process in order
+    for (auto& m : msgs)
+    {
+        if (!m) continue;
+
+        //This assumes your Message base class has Execute(EngineContext&)
+        m->Dispatch(*this);
+    }
 
 }
 
@@ -305,57 +357,11 @@ void EngineContext::update()
         //Push message (the only "action" UI can do)
         [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); }
     );
+
     // ---------------------------
     // Message Pump: UI asks, Engine does.
     // ---------------------------
-    auto msgs = messagequeue.PopAll();
-    for (auto& m : msgs)
-    {
-        if (auto* c = dynamic_cast<CreateEntityMessage*>(m.get()))
-        {
-            CreateEntityWithMesh(c->name, c->meshKey);
-        }
-        else if (auto* d = dynamic_cast<DeleteEntityMessage*>(m.get()))
-        {
-            //TODO: make sure Scene has a DeleteEntity(Entity) method (below)
-            scene.DestroyObject(d->entity);
-            scene.DestroyObjectAt(selectedIndex);
-        }
-        else if (auto* sm = dynamic_cast<SetEntityMeshMessage*>(m.get()))
-        {
-            //Find the object and swap its mesh pointer
-            auto& objects = scene.GetObjects();
-            for (auto& obj : objects)
-            {
-                if (obj.entity.Id == sm->entity.Id)
-                {
-                    obj.mesh.mesh = meshmanager.Get(sm->meshKey);
-                    break;
-                }
-            }
-        }
-        else if (auto* st = dynamic_cast<SetEntityTextureMessage*>(m.get()))
-        {
-            auto& objects = scene.GetObjects();
-            for (auto& obj : objects)
-            {
-                if (obj.entity.id == st->entity.id)
-                {
-                    obj.texture = textureManager.Get(st->textureKey);
-                    break;
-                }
-            }
-        }
-        else if (auto* im = dynamic_cast<ImportMeshMessage*>(m.get()))
-        {
-            ImportObjAsMesh(im->key, im->path);
-        }
-        else if (auto* it = dynamic_cast<ImportTextureMessage*>(m.get()))
-        {
-            ImportTexture(it->key, it->path);
-        }
-    }
-
+    ProcessMessages();
 
 }
 
@@ -398,4 +404,37 @@ void EngineContext::AddObject()
 std::vector<SceneObject>& EngineContext::Getobject()
 {
     return scene.GetObjects();
+}
+
+bool EngineContext::DeleteEntity(Entity e)
+{
+    auto& objects = scene.GetObjects();
+
+    for (size_t i = 0; i < objects.size(); i++)
+    {
+        if (objects[i].entity.Id == e.Id) //Entity compare by Id//
+        {
+            scene.DestroyObjectAt(i);
+
+            //Fix selectedIndex so it doesn't point into garbage//
+            int count = (int)scene.GetObjects().size();
+            if (count == 0)
+            {
+                selectedIndex = -1;
+            }
+            else
+            {
+                //If you deleted something before the selected index, shift it left//
+                if (selectedIndex > (int)i)
+                    selectedIndex--;
+
+                if (selectedIndex >= count)
+                    selectedIndex = count - 1;
+            }
+
+            return true;
+        }
+    }
+
+    return false;
 }

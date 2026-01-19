@@ -8,12 +8,15 @@
 #include "Message.hpp"
 #include "../Entity.hpp"
 
+
 struct DeleteEntityMessage final : public Message
 {
     Entity entity;
 
     explicit DeleteEntityMessage(Entity e)
         : entity(e) {}
+    void Dispatch(EngineContext& engine) override; //FIXME: implemented in .cpp
+
 };
 
 #endif //B_WENGINE_DELETEENTITYMESSAGE_HPP

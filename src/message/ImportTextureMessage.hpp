@@ -15,6 +15,9 @@ struct ImportTextureMessage final : public Message
 
     ImportTextureMessage(std::string inKey, std::string inPath)
         : key(std::move(inKey)), path(std::move(inPath)) {}
+
+    void Dispatch(EngineContext& engine) override;
+
 };
 
 #endif //B_WENGINE_IMPORTTEXTUREMESSAGE_HPP

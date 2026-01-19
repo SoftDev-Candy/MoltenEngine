@@ -16,6 +16,8 @@ struct SetEntityMeshMessage final : public Message
 
     SetEntityMeshMessage(Entity e, std::string key)
         : entity(e), meshKey(std::move(key)) {}
+
+    void Dispatch(EngineContext& engine) override;
 };
 
 #endif //B_WENGINE_SETENTITYMESHMESSAGE_HPP
