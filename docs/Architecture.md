@@ -104,13 +104,13 @@ This repo is split into “engine core”, “editor UI”, “assets/managers�
 ### Engine source overview (big picture)
 | Area | Responsibility | Key files |
 |---|---|---|
-| Engine orchestration | init/update/render/shutdown + message execution | `EngineContext.*`, `main.cpp` |
-| Scene model | stores entity objects, selection-safe deletion | `Scene.*`, `Entity.*`, `Transform.*`, `MeshComponent.*` |
-| Rendering | draw pipeline (MVP + textures) | `Renderer.*`, `Shader.*`, `ShaderManager.*`, `ShaderSource.*` |
-| Assets | GPU upload + file import | `Mesh.*`, `Texture.*`, `ObjLoader.*` |
-| Managers | caching + ownership | `MeshManager.*`, `TextureManager.*` |
-| Editor | UI windows + widgets + theme | `ui/UIManager.*`, `ui/EditorStyle.*`, `ui/EditorWidgets.*` |
-| Messages | commands from UI to engine | `message/*` |
+| Engine orchestration | init/update/render/shutdown + message execution | `EngineContext.`, `main.cpp` |
+| Scene model | stores entity objects, selection-safe deletion | `Scene.`, `Entity.`, `Transform.`, `MeshComponent.` |
+| Rendering | draw pipeline (MVP + textures) | `Renderer.`, `Shader.`, `ShaderManager.`, `ShaderSource.` |
+| Assets | GPU upload + file import | `Mesh.`, `Texture.`, `ObjLoader.` |
+| Managers | caching + ownership | `MeshManager.`, `TextureManager.` |
+| Editor | UI windows + widgets + theme | `ui/UIManager.`, `ui/EditorStyle.`, `ui/EditorWidgets.` |
+| Messages | commands from UI to engine | `message/` |
 
 ---
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
-project(B_WEngine)
+project(MoltenEngine)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 add_subdirectory(external/glfw)
 add_subdirectory(external/glad)
 
-add_executable(B_WEngine src/main.cpp
+add_executable(MoltenEngine src/main.cpp
         src/Shader.cpp
         src/Shader.hpp
         src/Renderable.cpp
@@ -82,13 +82,13 @@ add_executable(B_WEngine src/main.cpp
 
 find_package(OpenGL REQUIRED)
 
-target_link_libraries( B_WEngine PRIVATE
+target_link_libraries( MoltenEngine PRIVATE
         OpenGL::GL
         glfw
         glad
 )
 
-target_include_directories(B_WEngine PRIVATE
+target_include_directories(MoltenEngine PRIVATE
         external/glad/include
         external/glfw/include
         external/glm
@@ -97,4 +97,4 @@ target_include_directories(B_WEngine PRIVATE
     )
 
 #Had an error so basically need to tell the linker its a console app and we are not going to be using winmain() but just main()
-set_target_properties(B_WEngine PROPERTIES WIN32_EXECUTABLE OFF)
+set_target_properties(MoltenEngine PROPERTIES WIN32_EXECUTABLE OFF)
