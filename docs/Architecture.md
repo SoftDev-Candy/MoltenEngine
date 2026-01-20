@@ -42,8 +42,8 @@ MoltenEngine is built to **avoid that trap** while still shipping features quick
 - **EngineContext is the orchestrator** (glue layer + execution authority)
 
 **Entry points:**
-- [`src/main.cpp`](src/main.cpp)
-- [`src/EngineContext.cpp`](src/EngineContext.cpp) / [`src/EngineContext.hpp`](src/EngineContext.hpp)
+- [`MoltenEngine/src/main.cpp`](MoltenEngine/src/main.cpp)
+- [`MoltenEngine/src/EngineContext.cpp`](MoltenEngine/src/EngineContext.cpp) / [`MoltenEngine/src/EngineContext.hpp`](MoltenEngine/src/EngineContext.hpp)
 
 ---
 
@@ -63,7 +63,7 @@ MoltenEngine uses an editor-style frame loop:
 
 **Why:** “Proof of pipeline” matters more than perfect architecture early. Once the loop is stable, everything else can be modularized.
 
-**See:** [`src/EngineContext.cpp`](src/EngineContext.cpp)
+**See:** [`MoltenEngine/src/EngineContext.cpp`](MoltenEngine/src/EngineContext.cpp)
 
 ### Update (every frame)
 - Poll input (camera movement)
@@ -75,9 +75,9 @@ MoltenEngine uses an editor-style frame loop:
 **Why:** UI stays lightweight and doesn’t own core rules. It can be rewritten later without breaking the engine.
 
 **See:**
-- UI logic: [`src/ui/UIManager.cpp`](src/ui/UIManager.cpp)
-- Message queue: [`src/message/MessageQueue.hpp`](src/message/MessageQueue.hpp)
-- Scene mutations: [`src/Scene.hpp`](src/Scene.hpp)
+- UI logic: [`MoltenEngine/src/ui/UIManager.cpp`](MoltenEngine/src/ui/UIManager.cpp)
+- Message queue: [`MoltenEngine/src/message/MessageQueue.hpp`](MoltenEngine/src/message/MessageQueue.hpp)
+- Scene mutations: [`MoltenEngine/src/Scene.hpp`](MoltenEngine/src/Scene.hpp)
 
 ### Render (every frame)
 - Clear buffers
@@ -85,7 +85,7 @@ MoltenEngine uses an editor-style frame loop:
 - Render ImGui on top
 - Swap buffers
 
-**See:** [`src/Renderer.cpp`](src/Renderer.cpp)
+**See:** [`MoltenEngine/src/Renderer.cpp`](MoltenEngine/src/Renderer.cpp)
 
 ---
 
@@ -101,16 +101,17 @@ This repo is split into “engine core”, “editor UI”, “assets/managers�
 ### External dependencies
 - `external/glfw`, `external/glad`, `external/glm`, `external/imgui`, `external/stb`
 
-### Engine source overview (big picture)
-| Area | Responsibility | Key files |
-|---|---|---|
-| Engine orchestration | init/update/render/shutdown + message execution | `EngineContext.`, `main.cpp` |
-| Scene model | stores entity objects, selection-safe deletion | `Scene.`, `Entity.`, `Transform.`, `MeshComponent.` |
-| Rendering | draw pipeline (MVP + textures) | `Renderer.`, `Shader.`, `ShaderManager.`, `ShaderSource.` |
-| Assets | GPU upload + file import | `Mesh.`, `Texture.`, `ObjLoader.` |
-| Managers | caching + ownership | `MeshManager.`, `TextureManager.` |
-| Editor | UI windows + widgets + theme | `ui/UIManager.`, `ui/EditorStyle.`, `ui/EditorWidgets.` |
-| Messages | commands from UI to engine | `message/` |
+### Engine overview [links[↗]]
+| Area                     | Responsibility                                                                  | Key files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Engine orchestration** | Init / update / render / shutdown flow + message execution                      | [`MoltenEngine/src/EngineContext.cpp`](MoltenEngine/src/EngineContext.cpp)<br>[`MoltenEngine/src/EngineContext.hpp`](MoltenEngine/src/EngineContext.hpp)<br>[`MoltenEngine/src/main.cpp`](MoltenEngine/src/main.cpp)                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Scene model**          | Stores entity objects + selection-safe deletion + transform/component ownership | [`MoltenEngine/src/Scene.cpp`](MoltenEngine/src/Scene.cpp)<br>[`MoltenEngine/src/Scene.hpp`](MoltenEngine/src/Scene.hpp)<br><br>[`MoltenEngine/src/Entity.cpp`](MoltenEngine/src/Entity.cpp)<br>[`MoltenEngine/src/Entity.hpp`](MoltenEngine/src/Entity.hpp)<br><br>[`MoltenEngine/src/Transform.cpp`](MoltenEngine/src/Transform.cpp)<br>[`MoltenEngine/src/Transform.hpp`](MoltenEngine/src/Transform.hpp)<br><br>[`MoltenEngine/src/MeshComponent.cpp`](MoltenEngine/src/MeshComponent.cpp)<br>[`MoltenEngine/src/MeshComponent.hpp`](MoltenEngine/src/MeshComponent.hpp)                         |
+| **Rendering**            | Draw pipeline (MVP + textures) + render submission/draw traversal               | [`MoltenEngine/src/Renderer.cpp`](MoltenEngine/src/Renderer.cpp)<br>[`MoltenEngine/src/Renderer.hpp`](MoltenEngine/src/Renderer.hpp)<br><br>[`MoltenEngine/src/Shader.cpp`](MoltenEngine/src/Shader.cpp)<br>[`MoltenEngine/src/Shader.hpp`](MoltenEngine/src/Shader.hpp)<br><br>[`MoltenEngine/src/ShaderManager.cpp`](MoltenEngine/src/ShaderManager.cpp)<br>[`MoltenEngine/src/ShaderManager.hpp`](MoltenEngine/src/ShaderManager.hpp)<br><br>[`MoltenEngine/src/ShaderSource.cpp`](MoltenEngine/src/ShaderSource.cpp)<br>[`MoltenEngine/src/ShaderSource.hpp`](MoltenEngine/src/ShaderSource.hpp) |
+| **Assets**               | GPU upload + asset file import/parsing                                          | [`MoltenEngine/src/Mesh.cpp`](MoltenEngine/src/Mesh.cpp)<br>[`MoltenEngine/src/Mesh.hpp`](MoltenEngine/src/Mesh.hpp)<br><br>[`MoltenEngine/src/Texture.cpp`](MoltenEngine/src/Texture.cpp)<br>[`MoltenEngine/src/Texture.hpp`](MoltenEngine/src/Texture.hpp)<br><br>[`MoltenEngine/src/ObjLoader.cpp`](MoltenEngine/src/ObjLoader.cpp)<br>[`MoltenEngine/src/ObjLoader.hpp`](MoltenEngine/src/ObjLoader.hpp)                                                                                                                                                                                         |
+| **Managers**             | Caching + ownership (load once, reuse handles, manage lifetime)                 | [`MoltenEngine/src/MeshManager.cpp`](MoltenEngine/src/MeshManager.cpp)<br>[`MoltenEngine/src/MeshManager.hpp`](MoltenEngine/src/MeshManager.hpp)<br><br>[`MoltenEngine/src/TextureManager.cpp`](MoltenEngine/src/TextureManager.cpp)<br>[`MoltenEngine/src/TextureManager.hpp`](MoltenEngine/src/TextureManager.hpp)                                                                                                                                                                                                                                                                                 |
+| **Editor**               | UI windows + widgets + theme (ImGui layer)                                      | [`MoltenEngine/src/ui/UIManager.cpp`](MoltenEngine/src/ui/UIManager.cpp)<br>[`MoltenEngine/src/ui/UIManager.hpp`](MoltenEngine/src/ui/UIManager.hpp)<br><br>[`MoltenEngine/src/ui/EditorStyle.cpp`](MoltenEngine/src/ui/EditorStyle.cpp)<br>[`MoltenEngine/src/ui/EditorStyle.hpp`](MoltenEngine/src/ui/EditorStyle.hpp)<br><br>[`MoltenEngine/src/ui/EditorWidgets.cpp`](MoltenEngine/src/ui/EditorWidgets.cpp)<br>[`MoltenEngine/src/ui/EditorWidgets.hpp`](MoltenEngine/src/ui/EditorWidgets.hpp)                                                                                                 |
+| **Messages**             | Commands from UI → engine (decouple UI actions from core logic)                 | [`MoltenEngine/src/message/Message.hpp`](MoltenEngine/src/message/Message.hpp)<br>[`MoltenEngine/src/message/MessageQueue.hpp`](MoltenEngine/src/message/MessageQueue.hpp)<br><br>Concrete messages: `CreateEntityMessage`, `DeleteEntityMessage`, `ImportMeshMessage`, `ImportTextureMessage`, `SetEntityMeshMessage`, `SetEntityTextureMessage`                                                                                                                                                                                                                                                    |
+
 
 ---
 
@@ -134,7 +135,7 @@ Each object stores:
 - This helps debug “why is it drawing wrong?” quickly
 
 **Your current struct (source of truth):**  
-[`src/Scene.hpp`](src/Scene.hpp)
+[`MoltenEngine/src/Scene.hpp`](MoltenEngine/src/Scene.hpp)
 
 ### Scene storage choice
 Scene stores objects in a `std::vector<SceneObject>`.
@@ -157,7 +158,7 @@ MoltenEngine supports:
 - Prevents `selectedIndex` from pointing into freed/shifted objects
 - Avoids “selection points into garbage” bugs (classic editor crash)
 
-**See:** `Scene::DeleteEntity()` in [`src/Scene.hpp`](src/Scene.hpp)
+**See:** `Scene::DeleteEntity()` in [`MoltenEngine/src/Scene.hpp`](MoltenEngine/src/Scene.hpp)
 
 ---
 
@@ -181,8 +182,8 @@ For each SceneObject:
 - Per-entity textures are supported naturally
 - “Black model” issues are prevented by a default texture fallback
 
-**See:** [`src/Renderer.cpp`](src/Renderer.cpp)  
-Shader inputs: [`src/ShaderSource.cpp`](src/ShaderSource.cpp)
+**See:** [`MoltenEngine/src/Renderer.cpp`](MoltenEngine/src/Renderer.cpp)  
+Shader inputs: [`MoltenEngine/src/ShaderSource.cpp`](MoltenEngine/src/ShaderSource.cpp)
 
 ---
 
@@ -196,7 +197,7 @@ Mesh owns VAO/VBO/EBO and knows its index count.
 - Enforces RAII-ish cleanup in destructor
 - Makes draw calls clean (`mesh->Bind()`)
 
-**See:** [`src/Mesh.cpp`](src/Mesh.cpp)
+**See:** [`MoltenEngine/src/Mesh.cpp`](MoltenEngine/src/Mesh.cpp)
 
 ### MeshManager (asset cache)
 MeshManager owns meshes using `std::unique_ptr<Mesh>`.
@@ -206,7 +207,7 @@ MeshManager owns meshes using `std::unique_ptr<Mesh>`.
 - Lets multiple entities share the same mesh pointer safely
 - Makes “import mesh” behave like an engine system, not a special case
 
-**See:** [`src/MeshManager.cpp`](src/MeshManager.cpp)
+**See:** [`MoltenEngine/src/MeshManager.cpp`](MoltenEngine/src/MeshManager.cpp)
 
 ### Texture + TextureManager (same idea)
 Texture loads image data via stb_image, uploads to OpenGL, and binds later.
@@ -218,8 +219,8 @@ TextureManager caches textures by key.
 - Lets renderer pick defaults cleanly
 
 **See:**
-- [`src/Texture.cpp`](src/Texture.cpp)
-- [`src/TextureManager.cpp`](src/TextureManager.cpp)
+- [`MoltenEngine/src/Texture.cpp`](MoltenEngine/src/Texture.cpp)
+- [`MoltenEngine/src/TextureManager.cpp`](MoltenEngine/src/TextureManager.cpp)
 
 ### OBJ Loader (file → vertex/index arrays)
 OBJ loader outputs `ObjMeshData { vertices, indices }` in the format MoltenEngine expects.
@@ -233,8 +234,8 @@ So each vertex is **5 floats**.
 **Why:** It matches the shader input (`aPos` + `aUV`) and the Mesh stride.
 
 **See:**
-- [`src/ObjLoader.cpp`](src/ObjLoader.cpp)
-- [`src/ShaderSource.cpp`](src/ShaderSource.cpp)
+- [`MoltenEngine/src/ObjLoader.cpp`](MoltenEngine/src/ObjLoader.cpp)
+- [`MoltenEngine/src/ShaderSource.cpp`](MoltenEngine/src/ShaderSource.cpp)
 
 ---
 
@@ -251,7 +252,7 @@ The editor is built with ImGui and is split into:
 - Create buttons add new entities
 - Delete button removes selected entity
 
-**See:** [`src/ui/UIManager.cpp`](src/ui/UIManager.cpp)
+**See:** [`MoltenEngine/src/ui/UIManager.cpp`](MoltenEngine/src/ui/UIManager.cpp)
 
 ### Inspector window
 Edits selected object:
@@ -286,8 +287,8 @@ This is the architectural boundary that prevents UI spaghetti.
 - Makes it easier later to add undo/redo, logging, replay, or networking
 
 **See:**
-- [`src/message/Message.hpp`](src/message/Message.hpp)
-- [`src/message/MessageQueue.hpp`](src/message/MessageQueue.hpp)
+- [`MoltenEngine/src/message/Message.hpp`](MoltenEngine/src/message/Message.hpp)
+- [`MoltenEngine/src/message/MessageQueue.hpp`](MoltenEngine/src/message/MessageQueue.hpp)
 
 ---
 
@@ -303,7 +304,7 @@ OpenGL resources should be deleted **before the OpenGL context is destroyed**.
 **Why:** If you delete OpenGL objects after the context is gone, behavior becomes undefined (and drivers vary).
 
 **Enforced in:** `EngineContext::Terminate()`  
-**See:** [`src/EngineContext.cpp`](src/EngineContext.cpp)
+**See:** [`MoltenEngine/src/EngineContext.cpp`](MoltenEngine/src/EngineContext.cpp)
 
 ---
 
@@ -313,7 +314,7 @@ You can paste *small*, intentional code excerpts below.
 Keep each snippet 10–25 lines max so it looks deliberate.
 
 ### Showcase A — MVP pipeline in Renderer
-**File:** [`src/Renderer.cpp`](src/Renderer.cpp)
+**File:** [`MoltenEngine/src/Renderer.cpp`](MoltenEngine/src/Renderer.cpp)
 
 ```cpp
 // PASTE HERE: The section that computes model/view/projection and uploads MVP.
