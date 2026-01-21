@@ -7,7 +7,7 @@ Designed to stay small and readable while evolving toward an editor-style workfl
 
 <p align="center">
 📄 <strong>Architecture Document</strong><br/>
-<a href="doc/Architeture/Architecture.md">Read the Architecture Document</a>
+<a href="doc/Architecture.md">Read the Architecture Document</a>
 </p>
 
 ---
