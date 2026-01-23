@@ -17,6 +17,8 @@
 #include "message/SetEntityTextureMessage.hpp"
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
+#include "MemoryDebug.hpp"
+
 
 bool EngineContext::ImportTexture(const std::string& key, const std::string& path)
 {
@@ -294,6 +296,8 @@ void EngineContext::init()
         );
     }
 
+    PrintMemoryStatus();
+
 }
 
 bool EngineContext::ShouldClose()
@@ -358,9 +362,7 @@ void EngineContext::update()
         [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); }
     );
 
-    // ---------------------------
-    // Message Pump: UI asks, Engine does.
-    // ---------------------------
+    // Message vomit : UI asks, Engine does.
     ProcessMessages();
 
 }
@@ -386,13 +388,19 @@ void EngineContext::Terminate()
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
+    PrintMemoryStatus();
+
     //FIXME: IMPORTANT - delete GL resources BEFORE context dies//
     meshmanager.Clear();
     textureManager.Clear();
 
+    PrintMemoryStatus();
+
 //Destroy Imgui before window otherwise it can cause various issues later //
     glfwDestroyWindow(window);
     glfwTerminate();
+
+
 
 }
 

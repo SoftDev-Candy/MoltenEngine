@@ -316,5 +316,46 @@ Keep each snippet 10–25 lines max so it looks deliberate.
 ### Showcase A — MVP pipeline in Renderer
 **File:** [`../src/Renderer.cpp`](../src/Renderer.cpp)
 
-```cpp
+```
 // PASTE HERE: The section that computes model/view/projection and uploads MVP.
+```
+
+## Showcase B — MeshManager caching (engine-quality)
+
+**File:** [`../src/MeshManager.cpp`](../src/MeshManager.cpp)
+
+```
+// PASTE HERE: Add() function showing "don’t overwrite existing", store unique_ptr, return raw pointer.
+```
+
+## Showcase C — MessageQueue swap trick (clean design)
+
+File: ../src/message/MessageQueue.hpp
+
+// PASTE HERE: PopAll() using swap() (fast drain).
+
+## Showcase D — Drag/drop payload (editor workflow)
+
+File: ../src/ui/UIManager.cpp
+
+// PASTE HERE: BeginDragDropSource + AcceptDragDropPayload for meshes or textures.
+
+## Showcase E — OBJ import pipeline (file → GPU mesh)
+
+File: ../src/EngineContext.cpp
+
+// PASTE HERE: ImportObjAsMesh() showing LoadOBJ → MeshManager.Add(make_unique<Mesh>).
+
+## 11. Known limitations + next steps
+
+# Known limitations
+* Scene Storage: Scene uses vector storage (deletions shift indices; selection is repaired but long-term ECS would help).
+* OBJ Loader: OBJ loader targets a simple vertex format (pos+uv); normals/materials are not fully used.
+* Shaders: One shader for everything (no real material system yet).
+* Undo/Redo: No undo/redo (messages make this possible later).
+
+# Next steps (logical upgrades)
+* Material System: Add a Material struct (texture + shader parameters).
+* Command History: Add undo/redo by storing reverse operations in the message system.
+* Serialization: Add scene serialization (save/load entities and assignments).
+* Camera: Upgrade camera to support rotation (yaw/pitch) and expose it in the UI.

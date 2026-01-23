@@ -73,9 +73,6 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
     // ---------------------------
     // DELETE BUTTON
     // ---------------------------
-    // ---------------------------
-    // DELETE BUTTON
-    // ---------------------------
     //FIXME: if nothing is selected we disable delete so we dont explode//
     const bool hasSelection =
         selectedIndex >= 0 && selectedIndex < (int)scene.GetObjects().size();
