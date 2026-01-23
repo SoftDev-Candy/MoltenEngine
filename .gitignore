@@ -4,6 +4,8 @@ build/
 out/
 *.o
 *.obj
+!assets/objs/*.obj
+
 *.a
 *.lib
 *.dll
