@@ -4,7 +4,11 @@ build/
 out/
 *.o
 *.obj
-!assets/objs/*.obj
+!assets/models/**/*.obj
+!assets/models/**/*.mtl
+!assets/models/**/*.png
+!assets/models/**/*.jpg
+
 
 *.a
 *.lib
