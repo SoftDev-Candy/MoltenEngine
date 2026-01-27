@@ -12,7 +12,7 @@
 struct Transform
 {
 glm::vec3 position {0.0f,0.0f,0.0f};
-glm::vec3 rotation{0.0f,0.0f,0.0f}; //radians , Around X/Y/Z
+glm::vec3 rotation{0.0f,0.0f,0.0f}; // DEGREES (editor-friendly)
 glm::vec3 scale {1.0f,1.0f,1.0f};
 
 glm::mat4 GetMatrix()const
@@ -22,10 +22,10 @@ glm::mat4 GetMatrix()const
     //1.Translating it hoe make it feel bonita  //
     model = glm::translate(model,position);
 
-    //2.Rotate(XYZ)
-    model = glm::rotate(model , rotation.x,glm::vec3(1,0,0));
-    model = glm::rotate(model , rotation.y,glm::vec3(0,1,0));
-    model = glm::rotate(model , rotation.z,glm::vec3(0,0,1));
+    //2.Rotate(XYZ) (convert degrees -> radians)
+    model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1,0,0));
+    model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0,1,0));
+    model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0,0,1));
 
     //3.If she ain't fat she ain't right//
     model = glm::scale(model , scale);

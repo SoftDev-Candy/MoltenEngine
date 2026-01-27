@@ -18,16 +18,13 @@ EngineObject.init();
     //FIXME: Make it so that we dont have to do this manually everytime//
 
     EngineObject.CreateCube("Cube 1");
-    EngineObject.CreateCube("Cube 2");
 
     auto& obj1 = EngineObject.Getobject()[0];
-    auto& obj2 = EngineObject.Getobject()[1];
 
-    obj1.transform.position = glm ::vec3(0.0f, 0.0f,0.0f);
+    obj1.transform.position = glm ::vec3(1.0f, 0.0f,0.0f);
     obj1.name = "Cube 1";
 
-    obj2.transform.position = glm ::vec3(1.0f, 0.0f,0.0f);
-    obj2.name = "Cube 2";
+
 
     //Its while loop to keep that window open//we
     while (!EngineObject.ShouldClose())

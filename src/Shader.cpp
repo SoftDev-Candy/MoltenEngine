@@ -74,3 +74,14 @@ GLuint Shader::CompileSingle(GLenum type, const char *src)
     //Returning here is the compiled shader's Id.
     return shader;
 }
+void Shader::setVec3(const std::string& name, const glm::vec3& v)
+{
+    GLint loc = glGetUniformLocation(m_id, name.c_str());
+    glUniform3f(loc, v.x, v.y, v.z);
+}
+
+void Shader::setFloat(const std::string& name, float value)
+{
+    GLint loc = glGetUniformLocation(m_id, name.c_str());
+    glUniform1f(loc, value);
+}

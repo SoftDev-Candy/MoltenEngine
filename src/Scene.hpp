@@ -100,7 +100,6 @@ Entity CreateObject()
     return false;
 }
 
-
 private:
 
     std::vector<SceneObject>objects;

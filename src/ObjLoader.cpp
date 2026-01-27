@@ -227,20 +227,29 @@ ObjMeshData LoadOBJ(const std::string &path, bool flipV)
                 auto it = vertexMap.find(key);
                 if (it == vertexMap.end())
                 {
-                    // Create a new packed vertex (x y z u v)
+                    // Upgraded to // Create a new packed vertex (x y z u v nx ny nz)
+
                     const glm::vec3& p = positions[v0];
 
                     glm::vec2 uv(0.0f, 0.0f);
                     if (vt0 >= 0 && vt0 < (int)uvs.size())
                         uv = uvs[vt0]; // if OBJ has UVs we use them, if not its (0,0)
 
-                    unsigned int newIndex = (unsigned int)(Data.vertices.size() / 5);
+                    glm::vec3 n(0.0f, 0.0f, 1.0f);
+                    if (vn0 >= 0 && vn0 < (int)normals.size())
+                        n = normals[vn0];
+
+                    unsigned int newIndex = (unsigned int)(Data.vertices.size() / 8);
 
                     Data.vertices.push_back(p.x);
                     Data.vertices.push_back(p.y);
                     Data.vertices.push_back(p.z);
                     Data.vertices.push_back(uv.x);
                     Data.vertices.push_back(uv.y);
+                    Data.vertices.push_back(n.x);
+                    Data.vertices.push_back(n.y);
+                    Data.vertices.push_back(n.z);
+
 
                     vertexMap.emplace(key, newIndex);
                     faceVertexIndices.push_back(newIndex);

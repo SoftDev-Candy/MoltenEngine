@@ -132,7 +132,7 @@ bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& p
             imported.vertices.data(),
             imported.vertices.size(),
             imported.indices.data(),
-            imported.indices.size()
+            imported.indices.size() , 8
         )
     );
 
@@ -291,7 +291,7 @@ void EngineContext::init()
                             imported.vertices.data(),
                             imported.vertices.size(),     // float count
                             imported.indices.data(),
-                            imported.indices.size()       // index count
+                            imported.indices.size(),8     // index count
                         )
         );
     }

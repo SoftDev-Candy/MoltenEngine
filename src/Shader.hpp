@@ -8,6 +8,7 @@
 #include <string>
 #include<glad/glad.h>
 #include "glm/fwd.hpp"
+#include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 class Shader
@@ -20,6 +21,9 @@ Shader(const char* VertexShader , const char* FragmentSrc);
     void bind()const;
     void setMat4 (const std::string& name ,const glm::mat4& mat);
     void setInt(const char* texture , int id);
+    void setVec3(const std::string& name, const glm::vec3& v);
+    void setFloat(const std::string& name, float value);
+
 
 
 

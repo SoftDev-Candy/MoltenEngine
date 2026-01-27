@@ -8,8 +8,14 @@
 #include "Scene.hpp"
 #include <glad/glad.h>
 
+#include "GLFW/glfw3.h"
+
 void Renderer::Begin()
 {
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+
     glClearColor(.12f,0.13f,0.17f,1.0f); //The colour we want to give to the screen
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);//Clearing the buffer to get the colour out.
 }
@@ -17,7 +23,9 @@ void Renderer::Begin()
 void Renderer::RenderScene(Scene &scene , Camera& cam)
 {
     glm::mat4 view = cam.GetView();
-    glm::mat4 projection = cam.GetProjection(800.0f , 800.0f);
+    int fbW = 0, fbH = 0;
+    glfwGetFramebufferSize(glfwGetCurrentContext(), &fbW, &fbH);
+    glm::mat4 projection = cam.GetProjection((float)fbW, (float)fbH);
 
     for (auto& obj:scene.GetObjects())
     {
@@ -40,7 +48,20 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
             }
            else {
                 shaderptr->bind();
+               shaderptr->setMat4("uModel", model);
                 shaderptr->setMat4("MVP" ,mvp);
+               shaderptr->setVec3("uLightPos", glm::vec3(2.0f, 3.0f, 2.0f));
+               shaderptr->setVec3("uLightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+
+               // camerI mean it a position (you have it public in Camera)
+               shaderptr->setVec3("uViewPos", cam.position);
+
+               shaderptr->setFloat("uAmbientStrength", 0.15f);
+               shaderptr->setFloat("uShininess", 32.0f);
+               shaderptr->setFloat("uSpecStrength", 1.0);
+
+
+
             }
             //texture Rendering//
             glActiveTexture(GL_TEXTURE0);

@@ -10,17 +10,19 @@ class Mesh
 {
 public :
     //Mesh Constructor
-    Mesh(float* vertices , size_t vertSize , unsigned int* indices , size_t indexCount);
+    Mesh(float* vertices, size_t vertSize, unsigned int* indices, size_t indexCount, int strideFloats = 5);
     void Bind();
     unsigned int GetIndexCount()const;
 
     //Mesh Destructor
     ~Mesh();
 private:
-    GLuint VAO;
-    GLuint VBO;
-    GLuint EBO;
+    GLuint VAO{};
+    GLuint VBO{};
+    GLuint EBO{};
     unsigned int indexCount;
+    int strideFloats = 5;
+
 
 };
 
