@@ -23,6 +23,7 @@ Shader(const char* VertexShader , const char* FragmentSrc);
     void setInt(const char* texture , int id);
     void setVec3(const std::string& name, const glm::vec3& v);
     void setFloat(const std::string& name, float value);
+    void setInt(const std::string& name, int value);
 
 
 

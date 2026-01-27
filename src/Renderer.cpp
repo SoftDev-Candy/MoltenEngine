@@ -50,13 +50,27 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
                 shaderptr->bind();
                shaderptr->setMat4("uModel", model);
                 shaderptr->setMat4("MVP" ,mvp);
-               shaderptr->setVec3("uLightPos", glm::vec3(2.0f, 3.0f, 2.0f));
-               shaderptr->setVec3("uLightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+               auto& lights = scene.GetLights();
+
+               int count = (int)lights.size();
+               if (count > 8) count = 8;
+
+               shaderptr->setInt("uLightCount", count);
+
+               for (int i = 0; i < count; ++i)
+               {
+                   const auto& L = lights[i];
+
+                   shaderptr->setVec3(std::string("uLightPos[") + std::to_string(i) + "]", L.position);
+                   shaderptr->setVec3(std::string("uLightColor[") + std::to_string(i) + "]", L.color);
+                   shaderptr->setFloat(std::string("uLightIntensity[") + std::to_string(i) + "]", L.intensity);
+                   shaderptr->setFloat(std::string("uLightAmbient[") + std::to_string(i) + "]", L.ambientStrength);
+               }
+
 
                // camerI mean it a position (you have it public in Camera)
                shaderptr->setVec3("uViewPos", cam.position);
 
-               shaderptr->setFloat("uAmbientStrength", 0.15f);
                shaderptr->setFloat("uShininess", 32.0f);
                shaderptr->setFloat("uSpecStrength", 1.0);
 
