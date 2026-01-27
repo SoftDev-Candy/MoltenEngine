@@ -12,6 +12,15 @@
 
 class Texture;//Forward declare it again !
 
+struct Light
+{
+    glm::vec3 position{ 2.0f, 3.0f, 2.0f };
+    glm::vec3 color{ 1.0f, 1.0f, 1.0f };
+    float intensity = 2.0f;        // makes it brighter
+    float ambientStrength = 0.15f; // per-light ambient
+};
+
+
 struct SceneObject
 {
     Entity entity;
@@ -27,6 +36,16 @@ struct SceneObject
 
     //Per-entity texture pointer (Renderer will bind this per draw)//
     Texture* texture = nullptr;
+
+    // --- Material (Phase 2A) ---
+    std::string albedoKey = "None";
+    std::string specularKey = "None";
+
+    Texture* albedo = nullptr;     // diffuse/albedo map
+    Texture* specular = nullptr;   // specular mask map
+    float shininess = 32.0f;       // phong exponent
+
+
 
 };
 
@@ -100,10 +119,13 @@ Entity CreateObject()
     return false;
 }
 
+
 private:
 
     std::vector<SceneObject>objects;
     EntityID nextId = 1;
+    std::vector<Light> lights;
+
 
 };
 

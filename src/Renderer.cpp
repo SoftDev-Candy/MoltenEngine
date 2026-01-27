@@ -63,38 +63,35 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
 
 
             }
-            //texture Rendering//
+            // --- Material binding (Phase 2A core) ---
+            Texture* albedoTex = nullptr;
+            Texture* specTex   = nullptr;
+
+            // Albedo priority: per-entity albedo -> old per-entity texture -> engine active -> default
+            if (obj.albedo) albedoTex = obj.albedo;
+            else if (obj.texture) albedoTex = obj.texture;
+            else if (textureptr) albedoTex = textureptr;
+            else albedoTex = defaultTexture;
+
+            // Specular: per-entity specular -> fallback to albedo (better than null)
+            if (obj.specular) specTex = obj.specular;
+            else specTex = albedoTex;
+
+            // Bind albedo to unit 0
             glActiveTexture(GL_TEXTURE0);
-            //texture Rendering//
-            glActiveTexture(GL_TEXTURE0);
+            if (albedoTex) albedoTex->Bind();
 
-            //Per-entity first, then fallback to engine texture, then fallback to default//
-            Texture* useTex = nullptr;
+            // Bind specular to unit 1
+            glActiveTexture(GL_TEXTURE1);
+            if (specTex) specTex->Bind();
 
-            //1. If entity has its own texture use that//
-            if (obj.texture != nullptr)
-            {
-                useTex = obj.texture;
-            }
-            //2. Else use whatever EngineContext set as "active" texture//
-            else if (textureptr != nullptr)
-            {
-                useTex = textureptr;
-            }
-            //3. Else fallback default texture (optional)//
-            else
-            {
-                useTex = defaultTexture;
-            }
+            // Tell shader which units to read
+            shaderptr->setInt("uAlbedoMap", 0);
+            shaderptr->setInt("uSpecularMap", 1);
 
-            //Bind if we actually have one//
-            if (useTex != nullptr)
-            {
-                useTex->Bind();
-            }
+            // (for now, you can keep fixed shininess or use obj.shininess once added)
+            shaderptr->setFloat("uShininess", 32.0f);
 
-            //FIXME- This is materialState dunno what that means but need to move it out from here when i Do//
-            shaderptr->setInt("uTexture", 0);
 
             obj.mesh.mesh->Bind();
             glDrawElements(GL_TRIANGLES, obj.mesh.mesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
