@@ -16,6 +16,9 @@
 #include "../message/SetEntityTextureMessage.hpp"
 #include "../message/ImportMeshMessage.hpp"
 #include "../message/ImportTextureMessage.hpp"
+#include "../message/AddLightMessage.hpp"
+#include "../message/DeleteLightMessage.hpp"
+#include "../message/UpdateLightMessage.hpp"
 
 
 
@@ -418,5 +421,76 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
         }
 
         ImGui::End();
+
+// ---------------------------
+// LIGHTS WINDOW (Phase 3)
+// ---------------------------
+ImGui::Begin("Lights");
+
+auto& lights = scene.GetLights();
+static int selectedLight = 0;
+
+if (ImGui::Button("+ Add Light"))
+{
+    pushMessage(std::make_unique<AddLightMessage>());
+    // keep selection sane
+    if (selectedLight < 0) selectedLight = 0;
+}
+ImGui::SameLine();
+
+bool canDelete = !lights.empty() && selectedLight >= 0 && selectedLight < (int)lights.size();
+ImGui::BeginDisabled(!canDelete);
+if (ImGui::Button("Delete Light"))
+{
+    pushMessage(std::make_unique<DeleteLightMessage>(selectedLight));
+    if (selectedLight >= (int)lights.size() - 1) selectedLight = (int)lights.size() - 2;
+    if (selectedLight < 0) selectedLight = 0;
+}
+ImGui::EndDisabled();
+
+ImGui::Separator();
+
+if (lights.empty())
+{
+    ImGui::TextUnformatted("No lights in scene.");
+    ImGui::End();
+}
+else
+{
+    // Light selector
+    std::vector<std::string> lightNames;
+    lightNames.reserve(lights.size());
+    for (int i = 0; i < (int)lights.size(); ++i)
+        lightNames.push_back("Light " + std::to_string(i));
+
+    std::vector<const char*> labels;
+    labels.reserve(lightNames.size());
+    for (auto& s : lightNames) labels.push_back(s.c_str());
+
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::Combo("##LightSelect", &selectedLight, labels.data(), (int)labels.size());
+
+    // Edit selected light (local copy -> message)
+    if (selectedLight >= 0 && selectedLight < (int)lights.size())
+    {
+        Light edited = lights[selectedLight];
+        bool changed = false;
+
+        changed |= ImGui::DragFloat3("Position", &edited.position.x, 0.05f);
+        changed |= ImGui::ColorEdit3("Color", &edited.color.x);
+        changed |= ImGui::SliderFloat("Intensity", &edited.intensity, 0.0f, 10.0f);
+        changed |= ImGui::SliderFloat("Ambient", &edited.ambientStrength, 0.0f, 1.0f);
+
+        if (changed)
+        {
+            pushMessage(std::make_unique<UpdateLightMessage>(selectedLight, edited));
+        }
     }
+
+    ImGui::End();
+}
+
+    }
+
+
 }

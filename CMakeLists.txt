@@ -79,6 +79,12 @@ add_executable(MoltenEngine src/main.cpp
         src/message/SetEntityTextureMessage.hpp
         src/MemoryDebug.cpp
         src/MemoryDebug.hpp
+        src/message/AddLightMessage.cpp
+        src/message/AddLightMessage.hpp
+        src/message/DeleteLightMessage.cpp
+        src/message/DeleteLightMessage.hpp
+        src/message/UpdateLightMessage.cpp
+        src/message/UpdateLightMessage.hpp
 
 )
 

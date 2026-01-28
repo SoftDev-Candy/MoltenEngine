@@ -65,6 +65,8 @@ Camera camera;
     void SetEntityTexture(Entity e, const std::string& textureKey);
 
 
+    Scene& GetScene() { return scene; }
+    const Scene& GetScene() const { return scene; }
 
 
 private:
