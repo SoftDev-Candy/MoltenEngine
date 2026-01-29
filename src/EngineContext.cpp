@@ -446,3 +446,40 @@ bool EngineContext::DeleteEntity(Entity e)
 
     return false;
 }
+void EngineContext::SetEntityAlbedo(Entity e, const std::string& albedoKey)
+{
+    for (auto& obj : scene.GetObjects())
+    {
+        if (obj.entity.Id == e.Id)
+        {
+            obj.albedoKey = albedoKey;
+            obj.albedo = textureManager.Get(albedoKey); // or whatever your getter is
+            return;
+        }
+    }
+}
+
+void EngineContext::SetEntitySpecular(Entity e, const std::string& specularKey)
+{
+    for (auto& obj : scene.GetObjects())
+    {
+        if (obj.entity.Id == e.Id)
+        {
+            obj.specularKey = specularKey;
+            obj.specular = textureManager.Get(specularKey);
+            return;
+        }
+    }
+}
+
+void EngineContext::SetEntityShininess(Entity e, float shininess)
+{
+    for (auto& obj : scene.GetObjects())
+    {
+        if (obj.entity.Id == e.Id)
+        {
+            obj.shininess = shininess;
+            return;
+        }
+    }
+}

@@ -1,0 +1,24 @@
+//
+// Created by Candy on 1/29/2026.
+//
+
+#ifndef B_WENGINE_SETENTITYALBEDOMESSAGE_HPP
+#define B_WENGINE_SETENTITYALBEDOMESSAGE_HPP
+
+#include "Message.hpp"
+#include "../Entity.hpp"
+#include <string>
+
+struct SetEntityAlbedoMessage final : public Message
+{
+    Entity entity;
+    std::string albedoKey;
+
+    SetEntityAlbedoMessage(Entity e, std::string key)
+        : entity(e), albedoKey(std::move(key)) {}
+
+    void Dispatch(EngineContext& engine) override;
+};
+
+
+#endif //B_WENGINE_SETENTITYALBEDOMESSAGE_HPP

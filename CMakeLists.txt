@@ -85,6 +85,12 @@ add_executable(MoltenEngine src/main.cpp
         src/message/DeleteLightMessage.hpp
         src/message/UpdateLightMessage.cpp
         src/message/UpdateLightMessage.hpp
+        src/message/SetEntityAlbedoMessage.cpp
+        src/message/SetEntityAlbedoMessage.hpp
+        src/message/SetEntitySpecularMessage.cpp
+        src/message/SetEntitySpecularMessage.hpp
+        src/message/SetEntityShininessMessage.cpp
+        src/message/SetEntityShininessMessage.hpp
 
 )
 

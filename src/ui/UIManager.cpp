@@ -19,7 +19,9 @@
 #include "../message/AddLightMessage.hpp"
 #include "../message/DeleteLightMessage.hpp"
 #include "../message/UpdateLightMessage.hpp"
-
+#include "../message/SetEntityAlbedoMessage.hpp"
+#include "../message/SetEntitySpecularMessage.hpp"
+#include "../message/SetEntityShininessMessage.hpp"
 
 
 static std::string GetFileStem(const char* path)
@@ -204,7 +206,11 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
         }
     }
 
+
     ImGui::End();
+
+    //TEXTURE END's HERE
+
 
     ImGui::Begin("Camera");
 
@@ -382,6 +388,122 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                     ImGui::EndDragDropTarget();
                 }
             }
+    // ---------------------------
+    // Albedo (Combo + DragDrop)
+    // ---------------------------
+    {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Albedo");
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+
+        std::vector<std::string> keys = listTextureKeys();
+        std::vector<const char*> labels;
+        labels.reserve(keys.size());
+
+        int currentIndex = 0;
+        for (int i = 0; i < (int)keys.size(); i++)
+        {
+            labels.push_back(keys[i].c_str());
+            if (keys[i] == obj.albedoKey)
+                currentIndex = i;
+        }
+
+        if (!labels.empty())
+        {
+            if (ImGui::Combo("##Albedo", &currentIndex, labels.data(), (int)labels.size()))
+            {
+                pushMessage(std::make_unique<SetEntityAlbedoMessage>(obj.entity, keys[currentIndex]));
+            }
+        }
+        else
+        {
+            ImGui::TextUnformatted("No textures loaded");
+        }
+
+        // Drag target for textures
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEX_KEY"))
+            {
+                const char* droppedKey = (const char*)payload->Data;
+                pushMessage(std::make_unique<SetEntityAlbedoMessage>(obj.entity, std::string(droppedKey)));
+            }
+            ImGui::EndDragDropTarget();
+        }
+    }
+
+
+    // ---------------------------
+    // Specular (Combo + DragDrop)
+    // ---------------------------
+    {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Specular");
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+
+        std::vector<std::string> keys = listTextureKeys();
+        std::vector<const char*> labels;
+        labels.reserve(keys.size());
+
+        int currentIndex = 0;
+        for (int i = 0; i < (int)keys.size(); i++)
+        {
+            labels.push_back(keys[i].c_str());
+            if (keys[i] == obj.specularKey)
+                currentIndex = i;
+        }
+
+        if (!labels.empty())
+        {
+            if (ImGui::Combo("##Specular", &currentIndex, labels.data(), (int)labels.size()))
+            {
+                pushMessage(std::make_unique<SetEntitySpecularMessage>(obj.entity, keys[currentIndex]));
+            }
+        }
+        else
+        {
+            ImGui::TextUnformatted("No textures loaded");
+        }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEX_KEY"))
+            {
+                const char* droppedKey = (const char*)payload->Data;
+                pushMessage(std::make_unique<SetEntitySpecularMessage>(obj.entity, std::string(droppedKey)));
+            }
+            ImGui::EndDragDropTarget();
+        }
+    }
+
+    // ---------------------------
+    // Shininess
+    // ---------------------------
+    {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Shininess");
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+
+        float s = obj.shininess;
+        if (ImGui::SliderFloat("##Shininess", &s, 2.0f, 256.0f))
+        {
+            pushMessage(std::make_unique<SetEntityShininessMessage>(obj.entity, s));
+        }
+    }
+
+
 
             // ---------------------------
             // Transform (Website-style boxes)

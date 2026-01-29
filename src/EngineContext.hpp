@@ -68,6 +68,10 @@ Camera camera;
     Scene& GetScene() { return scene; }
     const Scene& GetScene() const { return scene; }
 
+    void SetEntityAlbedo(Entity e, const std::string& albedoKey);
+    void SetEntitySpecular(Entity e, const std::string& specularKey);
+    void SetEntityShininess(Entity e, float shininess);
+
 
 private:
 
