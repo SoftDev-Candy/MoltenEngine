@@ -68,6 +68,9 @@ Camera camera;
     Scene& GetScene() { return scene; }
     const Scene& GetScene() const { return scene; }
 
+    void SetMipmapsEnabled(bool enabled);
+    bool GetMipmapsEnabled() const { return useMipmaps; }
+
     void SetEntityAlbedo(Entity e, const std::string& albedoKey);
     void SetEntitySpecular(Entity e, const std::string& specularKey);
     void SetEntityShininess(Entity e, float shininess);
@@ -79,6 +82,8 @@ private:
     Scene scene;
     Renderer renderer;
     int selectedIndex = -1;
+    bool useMipmaps = true;
+
 
 };
 

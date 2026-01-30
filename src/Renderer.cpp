@@ -15,6 +15,7 @@ void Renderer::Begin()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    InitShadowResources();
 
     glClearColor(.12f,0.13f,0.17f,1.0f); //The colour we want to give to the screen
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);//Clearing the buffer to get the colour out.
@@ -126,4 +127,35 @@ void Renderer::SetActiveTexture(Texture *t)
 void Renderer::SetDefaultTexture(Texture* t)
 {
     defaultTexture = t;
+}
+void Renderer::InitShadowResources()
+{
+    if (shadowFBO != 0) return;
+
+    glGenFramebuffers(1, &shadowFBO);
+
+    glGenTextures(1, &shadowDepthTex);
+    glBindTexture(GL_TEXTURE_2D, shadowDepthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                 shadowSize, shadowSize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float border[4] = {1.f, 1.f, 1.f, 1.f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowDepthTex, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "[Shadow] FBO not complete!\n";
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

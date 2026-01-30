@@ -7,6 +7,8 @@
 #include "Scene.hpp"
 #include "Camera.hpp"
 #include "Shader.hpp"
+#include <glm/glm.hpp>
+
 
 class Texture;
 
@@ -21,11 +23,23 @@ public:
 
     Texture* defaultTexture = nullptr;
     void SetDefaultTexture(Texture* t);
+    void SetDepthShader(Shader* s);
+    void SetShadowsEnabled(bool enabled);
+    unsigned int GetShadowDepthTex() const { return shadowDepthTex; } // optional debug
+
 
 
 private:
     Shader* shaderptr = nullptr;
     Texture* textureptr = nullptr;//TODO--This shall disappear when a material system is in place.//
+    Shader* depthShader = nullptr;
+
+    unsigned int shadowFBO = 0;
+    unsigned int shadowDepthTex = 0;
+    int shadowSize = 2048;
+    bool shadowsEnabled = true;
+
+    void InitShadowResources();
 
 
 };

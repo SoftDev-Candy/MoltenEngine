@@ -22,6 +22,7 @@
 #include "../message/SetEntityAlbedoMessage.hpp"
 #include "../message/SetEntitySpecularMessage.hpp"
 #include "../message/SetEntityShininessMessage.hpp"
+#include "../message/SetMipmapsEnabledMessage.hpp"
 
 
 static std::string GetFileStem(const char* path)
@@ -611,6 +612,14 @@ else
 
     ImGui::End();
 }
+        ImGui::Begin("Render Settings");
+        static bool mip = true; // or init from engine via callback if you have one
+        if (ImGui::Checkbox("Use Mipmaps", &mip))
+        {
+            pushMessage(std::make_unique<SetMipmapsEnabledMessage>(mip));
+        }
+        ImGui::End();
+
 
     }
 

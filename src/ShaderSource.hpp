@@ -6,6 +6,9 @@
 #define B_WENGINE_SHADERSOURCE_HPP
 extern const char* VertexShaderSource;
 extern const char* FragmentShaderSource;
+extern const char* DepthVertexShaderSource;
+extern const char* DepthFragmentShaderSource;
+
 
 class ShaderSource
 {

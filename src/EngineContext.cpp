@@ -22,10 +22,14 @@
 
 bool EngineContext::ImportTexture(const std::string& key, const std::string& path)
 {
-    //FIXME: if you import same key twice, it will just return existing (safe)//
     Texture* t = textureManager.Add(key, std::make_unique<Texture>(path.c_str()));
+    if (t)
+    {
+        t->ApplySampling(useMipmaps); // <-- IMPORTANT: new texture respects UI toggle
+    }
     return t != nullptr;
 }
+
 void EngineContext::SetEntityMesh(Entity e, const std::string& meshKey)
 {
     Mesh* m = meshmanager.Get(meshKey);
@@ -122,9 +126,9 @@ bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& p
     }
 
     //FIXME: Mesh expects 5 floats per vertex (pos3 + uv2)//
-    if ((imported.vertices.size() % 5) != 0)
+    if ((imported.vertices.size() % 8) != 0)
     {
-        std::cerr << "[EngineContext] WARNING: OBJ vertices not multiple of 5 (pos+uv). Texture might be wrong.\n";
+        std::cerr << "[EngineContext] WARNING: OBJ vertices not multiple of 8 (pos+uv+normal).\n";
     }
 
     meshmanager.Add(key,
@@ -481,5 +485,17 @@ void EngineContext::SetEntityShininess(Entity e, float shininess)
             obj.shininess = shininess;
             return;
         }
+    }
+}
+
+void EngineContext::SetMipmapsEnabled(bool enabled)
+{
+    useMipmaps = enabled;
+
+    // apply to all textures currently loaded
+    for (const auto& key : textureManager.Keys())
+    {
+        Texture* t = textureManager.Get(key);
+        if (t) t->ApplySampling(useMipmaps);
     }
 }

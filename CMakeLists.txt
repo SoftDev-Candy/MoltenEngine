@@ -91,6 +91,10 @@ add_executable(MoltenEngine src/main.cpp
         src/message/SetEntitySpecularMessage.hpp
         src/message/SetEntityShininessMessage.cpp
         src/message/SetEntityShininessMessage.hpp
+        src/message/SetMipmapsEnabledMessage.cpp
+        src/message/SetMipmapsEnabledMessage.hpp
+        src/message/SetShadowsEnabledMessage.cpp
+        src/message/SetShadowsEnabledMessage.hpp
 
 )
 

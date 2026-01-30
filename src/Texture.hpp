@@ -15,6 +15,11 @@ public:
     void Bind();
     GLuint id;
 
+    void ApplySampling(bool useMipmaps);
+    void EnsureMipmaps(); // builds mipmaps once
+    bool hasMipmaps = false;
+
+
     ~Texture();
 
 };
