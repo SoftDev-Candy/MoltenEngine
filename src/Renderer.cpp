@@ -9,6 +9,10 @@
 #include <glad/glad.h>
 
 #include "GLFW/glfw3.h"
+void Renderer::SetShadowsEnabled(bool enabled)
+{
+    shadowsEnabled = enabled;
+}
 
 void Renderer::Begin()
 {
@@ -27,6 +31,43 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
     int fbW = 0, fbH = 0;
     glfwGetFramebufferSize(glfwGetCurrentContext(), &fbW, &fbH);
     glm::mat4 projection = cam.GetProjection((float)fbW, (float)fbH);
+    // -----------------------------
+    // SHADOW PASS (depth only)
+    // -----------------------------
+    auto& lights = scene.GetLights();
+    glm::vec3 shadowLightPos = glm::vec3(2.0f, 3.0f, 2.0f);
+    if (!lights.empty()) shadowLightPos = lights[0].position;
+
+    glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 50.0f);
+    glm::mat4 lightView = glm::lookAt(shadowLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+    glm::mat4 lightSpace = lightProj * lightView;
+
+    if (shadowsEnabled && depthShader != nullptr)
+    {
+        glViewport(0, 0, shadowSize, shadowSize);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        depthShader->bind();
+        depthShader->setMat4("uLightSpaceMatrix", lightSpace);
+
+        for (auto& o : scene.GetObjects())
+        {
+            if (o.mesh.mesh == nullptr) continue;
+
+            glm::mat4 m = o.transform.GetMatrix();
+            depthShader->setMat4("uModel", m);
+
+            o.mesh.mesh->Bind();
+            glDrawElements(GL_TRIANGLES, o.mesh.mesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    // restore viewport for normal render
+    glViewport(0, 0, fbW, fbH);
+
 
     for (auto& obj:scene.GetObjects())
     {
@@ -51,6 +92,14 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
                 shaderptr->bind();
                shaderptr->setMat4("uModel", model);
                 shaderptr->setMat4("MVP" ,mvp);
+               shaderptr->setMat4("uLightSpaceMatrix", lightSpace);
+               shaderptr->setInt("uShadowMap", 2);
+               shaderptr->setInt("uShadowsEnabled", shadowsEnabled ? 1 : 0);
+
+               // bind shadow depth texture to unit 2
+               glActiveTexture(GL_TEXTURE2);
+               glBindTexture(GL_TEXTURE_2D, shadowDepthTex);
+
                auto& lights = scene.GetLights();
 
                int count = (int)lights.size();
@@ -66,16 +115,35 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
                    shaderptr->setVec3(std::string("uLightColor[") + std::to_string(i) + "]", L.color);
                    shaderptr->setFloat(std::string("uLightIntensity[") + std::to_string(i) + "]", L.intensity);
                    shaderptr->setFloat(std::string("uLightAmbient[") + std::to_string(i) + "]", L.ambientStrength);
+                   // rotation is degrees -> convert
+                   glm::vec3 rotRad = glm::radians(L.rotation);
+
+                   glm::mat4 R(1.0f);
+                   R = glm::rotate(R, rotRad.x, glm::vec3(1,0,0));
+                   R = glm::rotate(R, rotRad.y, glm::vec3(0,1,0));
+                   R = glm::rotate(R, rotRad.z, glm::vec3(0,0,1));
+
+                   // OpenGL “forward” is typically -Z
+                   glm::vec3 dir = glm::normalize(glm::vec3(R * glm::vec4(0,0,-1,0)));
+
+                   shaderptr->setVec3("uLightDir[" + std::to_string(i) + "]", dir);
+
+
+                   // angles are degrees in UI -> cos expects radians
+                   float innerCos = cosf(glm::radians(L.innerAngle));
+                   float outerCos = cosf(glm::radians(L.outerAngle));
+
+                   shaderptr->setFloat(std::string("uLightInnerCos[") + std::to_string(i) + "]", innerCos);
+                   shaderptr->setFloat(std::string("uLightOuterCos[") + std::to_string(i) + "]", outerCos);
+
+
                }
 
-
-               // camerI mean it a position (you have it public in Camera)
+               // camera position (public in Camera class)
                shaderptr->setVec3("uViewPos", cam.position);
 
-               shaderptr->setFloat("uShininess", 32.0f);
+    shaderptr->setFloat("uShininess", obj.shininess);
                shaderptr->setFloat("uSpecStrength", 1.0);
-
-
 
             }
             // --- Material binding (Phase 2A core) ---
@@ -104,15 +172,54 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
             shaderptr->setInt("uAlbedoMap", 0);
             shaderptr->setInt("uSpecularMap", 1);
 
-            // (for now, you can keep fixed shininess or use obj.shininess once added)
-            shaderptr->setFloat("uShininess", 32.0f);
-
 
             obj.mesh.mesh->Bind();
             glDrawElements(GL_TRIANGLES, obj.mesh.mesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
 
         }
     }
+               // -----------------------------
+               // LIGHT GIZMOS (so lights are visible)
+               // -----------------------------
+               Mesh* gizmoMesh = nullptr;
+               // if you can access a cube mesh from scene objects: easiest fallback is draw using the first object's meshKey "Cube" isn't accessible here.
+               // BEST minimal: store a pointer in Renderer (SetLightGizmoMesh) OR just reuse the currently bound obj mesh? Not good.
+               // So: do the clean minimal: add a setter and set it from EngineContext (next step).
+               if (lightGizmoMesh != nullptr)
+               {
+                   // Optional wireframe toggle
+                   if (renderLightWireframe)
+                       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+                   shaderptr->bind(); // reuse same shader (it will still shade, good enough for demo)
+
+                   auto& lights = scene.GetLights();
+                   for (int i = 0; i < (int)lights.size() && i < 8; ++i)
+                   {
+                       const auto& L = lights[i];
+
+                       glm::mat4 m = glm::mat4(1.0f);
+                       m = glm::translate(m, L.position);
+                       m = glm::rotate(m, glm::radians(L.rotation.x), glm::vec3(1,0,0));
+                       m = glm::rotate(m, glm::radians(L.rotation.y), glm::vec3(0,1,0));
+                       m = glm::rotate(m, glm::radians(L.rotation.z), glm::vec3(0,0,1));
+
+                       m = glm::scale(m, glm::vec3(0.15f)); // small cube
+
+                       glm::mat4 mvpGizmo = projection * view * m;
+
+                       shaderptr->setMat4("uModel", m);
+                       shaderptr->setMat4("MVP", mvpGizmo);
+
+                       lightGizmoMesh->Bind();
+                       glDrawElements(GL_TRIANGLES, lightGizmoMesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
+                   }
+
+                   if (renderLightWireframe)
+                       glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+               }
+
+
 }
 
 void Renderer::SetActiveShader(Shader *s)

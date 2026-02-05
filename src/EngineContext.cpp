@@ -275,7 +275,12 @@ void EngineContext::init()
     cubeMesh= meshmanager.Add( "Cube",
         std::make_unique<Mesh>(vertices, 40, indices,36)
     );
-    //FIXME - NEED A MESH MANAGER TO DELETE THIS //
+    renderer.SetLightGizmoMesh(meshmanager.Get("Cube"));
+    Mesh* dbg = meshmanager.Get("Cube");
+    std::cout << "[Debug] Cube mesh ptr = " << dbg << "\n";
+    renderer.SetLightGizmoMesh(dbg);
+
+
 
     shadermanager.LoadShader("Default",VertexShaderSource,FragmentShaderSource);
     renderer.SetActiveShader(shadermanager.GetShader("Default"));
@@ -286,7 +291,10 @@ void EngineContext::init()
     renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
 
 
+
     ObjMeshData imported = LoadOBJ("../assets/models/Cube2.obj", false);
+    //Light GIZMO sigular call here //
+
 
     if(!imported.vertices.empty() && !imported.indices.empty())
     {
@@ -498,4 +506,8 @@ void EngineContext::SetMipmapsEnabled(bool enabled)
         Texture* t = textureManager.Get(key);
         if (t) t->ApplySampling(useMipmaps);
     }
+}
+void EngineContext::SetShadowsEnabled(bool enabled)
+{
+    renderer.SetShadowsEnabled(enabled);
 }

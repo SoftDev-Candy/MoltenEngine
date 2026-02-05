@@ -83,6 +83,9 @@ uniform vec3  uLightPos[MAX_LIGHTS];
 uniform vec3  uLightColor[MAX_LIGHTS];
 uniform float uLightIntensity[MAX_LIGHTS];
 uniform float uLightAmbient[MAX_LIGHTS];
+uniform vec3  uLightDir[MAX_LIGHTS];
+uniform float uLightInnerCos[MAX_LIGHTS];
+uniform float uLightOuterCos[MAX_LIGHTS];
 
 uniform float uShininess;
 uniform float uSpecStrength;
@@ -90,19 +93,14 @@ uniform float uSpecStrength;
 // ---- shadow helpers ----
 float ShadowFactor(vec4 lightSpacePos, vec3 N, vec3 L)
 {
-    // Perspective divide
     vec3 proj = lightSpacePos.xyz / lightSpacePos.w;
-    // to [0,1]
     proj = proj * 0.5 + 0.5;
 
-    // outside shadow map -> no shadow
     if (proj.z > 1.0) return 0.0;
     if (proj.x < 0.0 || proj.x > 1.0 || proj.y < 0.0 || proj.y > 1.0) return 0.0;
 
-    // bias reduces acne
     float bias = max(0.0025 * (1.0 - dot(N, L)), 0.0005);
 
-    // basic PCF (3x3)
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(uShadowMap, 0));
     for (int x = -1; x <= 1; ++x)
@@ -115,7 +113,7 @@ float ShadowFactor(vec4 lightSpacePos, vec3 N, vec3 L)
         }
     }
     shadow /= 9.0;
-    return shadow; // 0 = lit, 1 = shadowed
+    return shadow;
 }
 
 void main()
@@ -130,14 +128,19 @@ void main()
 
     int count = clamp(uLightCount, 0, MAX_LIGHTS);
 
-    // We shadow only the FIRST light (index 0) to keep it minimal.
-    // Others contribute normally.
     for (int i = 0; i < count; ++i)
     {
-        vec3 L = normalize(uLightPos[i] - vWorldPos);
-        vec3 lightCol = uLightColor[i] * uLightIntensity[i];
+        // --- distance attenuation (THIS is the missing piece) ---
+        vec3  lightVec = uLightPos[i] - vWorldPos;
+        float dist     = length(lightVec);
+        vec3  L        = normalize(lightVec);
 
-        // ambient always applies
+        // classic attenuation curve (tweak constants if you want)
+        float atten = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+
+        vec3 lightCol = uLightColor[i] * uLightIntensity[i] * atten;
+
+        // ambient (not affected by spotlight)
         vec3 ambient = uLightAmbient[i] * albedo * lightCol;
 
         // diffuse
@@ -149,13 +152,20 @@ void main()
         float spec = pow(max(dot(V, R), 0.0), uShininess);
         vec3 specular = (uSpecStrength * spec * specMask) * lightCol;
 
+        // spotlight factor
+        // Use -L because L points fragment -> light, but spotlight direction is light -> outward
+        float cosTheta = dot(normalize(-L), normalize(uLightDir[i]));
+        float spot = smoothstep(uLightOuterCos[i], uLightInnerCos[i], cosTheta);
+
+        diffuse *= spot;
+        specular *= spot;
+
         float shadow = 0.0;
         if (uShadowsEnabled && i == 0)
         {
             shadow = ShadowFactor(vLightSpacePos, N, L);
         }
 
-        // darken only diffuse+specular in shadow
         colorOut += ambient + (1.0 - shadow) * (diffuse + specular);
     }
 

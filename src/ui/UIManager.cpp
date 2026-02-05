@@ -23,6 +23,7 @@
 #include "../message/SetEntitySpecularMessage.hpp"
 #include "../message/SetEntityShininessMessage.hpp"
 #include "../message/SetMipmapsEnabledMessage.hpp"
+#include "../message/SetShadowsEnabledMessage.hpp"
 
 
 static std::string GetFileStem(const char* path)
@@ -600,6 +601,12 @@ else
         bool changed = false;
 
         changed |= ImGui::DragFloat3("Position", &edited.position.x, 0.05f);
+        changed |= ImGui::DragFloat3("Rotation", &edited.rotation.x, 0.5f);
+        changed |= ImGui::SliderFloat("Inner Angle", &edited.innerAngle, 1.0f, 60.0f);
+        changed |= ImGui::SliderFloat("Outer Angle", &edited.outerAngle, 1.0f, 80.0f);
+        if (edited.outerAngle < edited.innerAngle) edited.outerAngle = edited.innerAngle;
+
+
         changed |= ImGui::ColorEdit3("Color", &edited.color.x);
         changed |= ImGui::SliderFloat("Intensity", &edited.intensity, 0.0f, 10.0f);
         changed |= ImGui::SliderFloat("Ambient", &edited.ambientStrength, 0.0f, 1.0f);
@@ -622,6 +629,13 @@ else
 
 
     }
+    ImGui::Begin("Render Settings");
+    static bool shadows = true;
+    if (ImGui::Checkbox("Enable Shadows", &shadows))
+    {
+        pushMessage(std::make_unique<SetShadowsEnabledMessage>(shadows));
+    }
+    ImGui::End();
 
 
 }

@@ -27,6 +27,8 @@ public:
     void SetShadowsEnabled(bool enabled);
     unsigned int GetShadowDepthTex() const { return shadowDepthTex; } // optional debug
 
+    void SetLightGizmoMesh(Mesh* m) { lightGizmoMesh = m; }
+    void SetRenderLightWireframe(bool v) { renderLightWireframe = v; }
 
 
 private:
@@ -40,6 +42,8 @@ private:
     bool shadowsEnabled = true;
 
     void InitShadowResources();
+    Mesh* lightGizmoMesh = nullptr;
+    bool renderLightWireframe = false;
 
 
 };

@@ -112,6 +112,7 @@ target_include_directories(MoltenEngine PRIVATE
         external/glm
         external/imgui
         external/stb
+        message/
     )
 
 #Had an error so basically need to tell the linker its a console app and we are not going to be using winmain() but just main()
