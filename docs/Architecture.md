@@ -308,16 +308,121 @@ OpenGL resources should be deleted **before the OpenGL context is destroyed**.
 
 ---
 
-## 10. Where to showcase code snippets proudly
-
-You can paste *small*, intentional code excerpts below.  
-Keep each snippet 10–25 lines max so it looks deliberate.
+## Code Snippets
 
 ### Showcase A — MVP pipeline in Renderer
 **File:** [`../src/Renderer.cpp`](../src/Renderer.cpp)
 
 ```
-// PASTE HERE: The section that computes model/view/projection and uploads MVP.
+for (auto& obj:scene.GetObjects())
+    {
+        if (obj.mesh.mesh ==nullptr)
+        {
+            continue;
+        }
+        else
+        {
+            //1.Compute Model
+            glm::mat4 model = obj.transform.GetMatrix();
+
+            //2.Compute MVP
+            glm::mat4 mvp = projection * view * model;
+            //bind shader with MVP
+            if (shaderptr == nullptr)
+            {
+                std::cout<<"The activeShader is null ERROR in File Renderer.cpp (RenderScene)\n";
+                continue;
+            }
+           else {
+                shaderptr->bind();
+               shaderptr->setMat4("uModel", model);
+                shaderptr->setMat4("MVP" ,mvp);
+               shaderptr->setMat4("uLightSpaceMatrix", lightSpace);
+               shaderptr->setInt("uShadowMap", 2);
+               shaderptr->setInt("uShadowsEnabled", shadowsEnabled ? 1 : 0);
+
+               // bind shadow depth texture to unit 2
+               glActiveTexture(GL_TEXTURE2);
+               glBindTexture(GL_TEXTURE_2D, shadowDepthTex);
+
+               auto& lights = scene.GetLights();
+
+               int count = (int)lights.size();
+               if (count > 8) count = 8;
+
+               shaderptr->setInt("uLightCount", count);
+
+               for (int i = 0; i < count; ++i)
+               {
+                   const auto& L = lights[i];
+
+                   shaderptr->setVec3(std::string("uLightPos[") + std::to_string(i) + "]", L.position);
+                   shaderptr->setVec3(std::string("uLightColor[") + std::to_string(i) + "]", L.color);
+                   shaderptr->setFloat(std::string("uLightIntensity[") + std::to_string(i) + "]", L.intensity);
+                   shaderptr->setFloat(std::string("uLightAmbient[") + std::to_string(i) + "]", L.ambientStrength);
+                   // rotation is degrees -> convert
+                   glm::vec3 rotRad = glm::radians(L.rotation);
+
+                   glm::mat4 R(1.0f);
+                   R = glm::rotate(R, rotRad.x, glm::vec3(1,0,0));
+                   R = glm::rotate(R, rotRad.y, glm::vec3(0,1,0));
+                   R = glm::rotate(R, rotRad.z, glm::vec3(0,0,1));
+
+                   // OpenGL “forward” is typically -Z
+                   glm::vec3 dir = glm::normalize(glm::vec3(R * glm::vec4(0,0,-1,0)));
+
+                   shaderptr->setVec3("uLightDir[" + std::to_string(i) + "]", dir);
+
+
+                   // angles are degrees in UI -> cos expects radians
+                   float innerCos = cosf(glm::radians(L.innerAngle));
+                   float outerCos = cosf(glm::radians(L.outerAngle));
+
+                   shaderptr->setFloat(std::string("uLightInnerCos[") + std::to_string(i) + "]", innerCos);
+                   shaderptr->setFloat(std::string("uLightOuterCos[") + std::to_string(i) + "]", outerCos);
+
+
+               }
+
+               // camera position (public in Camera class)
+               shaderptr->setVec3("uViewPos", cam.position);
+
+    shaderptr->setFloat("uShininess", obj.shininess);
+               shaderptr->setFloat("uSpecStrength", 1.0);
+
+            }
+            // --- Material binding (Phase 2A core) ---
+            Texture* albedoTex = nullptr;
+            Texture* specTex   = nullptr;
+
+            // Albedo priority: per-entity albedo -> old per-entity texture -> engine active -> default
+            if (obj.albedo) albedoTex = obj.albedo;
+            else if (obj.texture) albedoTex = obj.texture;
+            else if (textureptr) albedoTex = textureptr;
+            else albedoTex = defaultTexture;
+
+            // Specular: per-entity specular -> fallback to albedo (better than null)
+            if (obj.specular) specTex = obj.specular;
+            else specTex = albedoTex;
+
+            // Bind albedo to unit 0
+            glActiveTexture(GL_TEXTURE0);
+            if (albedoTex) albedoTex->Bind();
+
+            // Bind specular to unit 1
+            glActiveTexture(GL_TEXTURE1);
+            if (specTex) specTex->Bind();
+
+            // Tell shader which units to read
+            shaderptr->setInt("uAlbedoMap", 0);
+            shaderptr->setInt("uSpecularMap", 1);
+
+
+            obj.mesh.mesh->Bind();
+            glDrawElements(GL_TRIANGLES, obj.mesh.mesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
+
+        }
+    }
 ```
 
 ## Showcase B — MeshManager caching (engine-quality)
@@ -325,27 +430,116 @@ Keep each snippet 10–25 lines max so it looks deliberate.
 **File:** [`../src/MeshManager.cpp`](../src/MeshManager.cpp)
 
 ```
-// PASTE HERE: Add() function showing "don’t overwrite existing", store unique_ptr, return raw pointer.
+Mesh * MeshManager::Add(const std::string key, std::unique_ptr<Mesh> mesh)
+{
+    //1. To be safe lets not overwrite in mem just find it and if it exists return//
+    auto it = meshes.find(key);
+    if (it != meshes.end())
+    {
+        return it->second.get();
+    }
+//2. Store it
+
+    meshes.emplace(key,std::move(mesh));
+
+//3.Return the RAWWWWWWR pointer to the stored mesh//
+    return meshes.at(key).get();
+
+}
 ```
 
 ## Showcase C — MessageQueue swap trick (clean design)
 
 File: ../src/message/MessageQueue.hpp
 
-// PASTE HERE: PopAll() using swap() (fast drain).
+```
+   std::vector<std::unique_ptr<Message>> PopAll()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+
+        std::vector<std::unique_ptr<Message>> out;
+        out.swap(messages); // fast + leaves messages empty
+
+        return out;
+    }
+```
 
 ## Showcase D — Drag/drop payload (editor workflow)
 
 File: ../src/ui/UIManager.cpp
 
-// PASTE HERE: BeginDragDropSource + AcceptDragDropPayload for meshes or textures.
+```
+ImGui::TextUnformatted("Textures (drag onto Texture)");
+    {
+        std::vector<std::string> keys = listTextureKeys();
+        for (const std::string& k : keys)
+        {
+            ImGui::Selectable(k.c_str());
 
+            //Drag source//
+            if (ImGui::BeginDragDropSource())
+            {
+                ImGui::SetDragDropPayload("TEX_KEY", k.c_str(), k.size() + 1);
+                ImGui::Text("Texture: %s", k.c_str());
+                ImGui::EndDragDropSource();
+            }
+        }
+    }
+
+```
+**Payload delivery**
+```
+                //Drag target for meshes//
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MESH_KEY"))
+                    {
+                        const char* droppedKey = (const char*)payload->Data;
+                        Mesh* m = getMeshByKey(droppedKey);
+                        if (m != nullptr)
+                        {
+                            obj.mesh.mesh = m;
+                            obj.meshKey = droppedKey;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+            }
+
+```
 ## Showcase E — OBJ import pipeline (file → GPU mesh)
 
 File: ../src/EngineContext.cpp
 
-// PASTE HERE: ImportObjAsMesh() showing LoadOBJ → MeshManager.Add(make_unique<Mesh>).
+```
+bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& path)
+{
+    ObjMeshData imported = LoadOBJ(path, false);
 
+    if (imported.vertices.empty() || imported.indices.empty())
+    {
+        std::cerr << "[EngineContext] ImportObjAsMesh failed: empty mesh data\n";
+        return false;
+    }
+
+    //FIXME: Mesh expects 5 floats per vertex (pos3 + uv2)//
+    if ((imported.vertices.size() % 8) != 0)
+    {
+        std::cerr << "[EngineContext] WARNING: OBJ vertices not multiple of 8 (pos+uv+normal).\n";
+    }
+
+    meshmanager.Add(key,
+        std::make_unique<Mesh>(
+            imported.vertices.data(),
+            imported.vertices.size(),
+            imported.indices.data(),
+            imported.indices.size() , 8
+        )
+    );
+
+    return true;
+}
+```
 ## 11. Known limitations + next steps
 
 # Known limitations
@@ -353,6 +547,7 @@ File: ../src/EngineContext.cpp
 * OBJ Loader: OBJ loader targets a simple vertex format (pos+uv); normals/materials are not fully used.
 * Shaders: One shader for everything (no real material system yet).
 * Undo/Redo: No undo/redo (messages make this possible later).
+*File loading and persistence management Missing
 
 # Next steps (logical upgrades)
 * Material System: Add a Material struct (texture + shader parameters).
