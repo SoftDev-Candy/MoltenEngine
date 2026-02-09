@@ -76,6 +76,8 @@ Camera camera;
     void SetEntityShininess(Entity e, float shininess);
     void SetShadowsEnabled(bool enabled);
 
+    void CameraControls (Camera& camera);
+
 
 private:
 
@@ -84,6 +86,8 @@ private:
     Renderer renderer;
     int selectedIndex = -1;
     bool useMipmaps = true;
+    float deltaTime = 0.0f;
+    double lastTime = 0.0f;
 
 
 };

@@ -327,38 +327,7 @@ void EngineContext::update()
     ImGui::NewFrame();
 
     UI::BeginDockspaceAndTopBar();
-
-    //Made the movement go up and down , side to side to like a rollercoaster//
-    //TODO - Create a control manager class and add this there//
-    if (glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
-    {
-        camera.position.z -= 0.05f;
-    }
-
-    if (glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
-    {
-        camera.position.z += 0.05f;
-    }
-
-    if (glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
-    {
-        camera.position.x -= 0.05f;
-    }
-
-    if (glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
-    {
-        camera.position.x += 0.05f;
-    }
-
-    if (glfwGetKey(window,GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        camera.position.y -= 0.05f;
-    }
-
-    if (glfwGetKey(window,GLFW_KEY_E) == GLFW_PRESS)
-    {
-        camera.position.y += 0.05f;
-    }
+    CameraControls(camera);
 
     ui.Draw(scene, camera, selectedIndex,
 
@@ -510,4 +479,39 @@ void EngineContext::SetMipmapsEnabled(bool enabled)
 void EngineContext::SetShadowsEnabled(bool enabled)
 {
     renderer.SetShadowsEnabled(enabled);
+}
+
+void EngineContext::CameraControls(Camera& camera)
+{
+    //Made the movement go up and down , side to side to like a rollercoaster//
+    if (glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
+    {
+        camera.position.z -= 0.05f;
+    }
+
+    if (glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
+    {
+        camera.position.z += 0.05f;
+    }
+
+    if (glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
+    {
+        camera.position.x -= 0.05f;
+    }
+
+    if (glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camera.position.x += 0.05f;
+    }
+
+    if (glfwGetKey(window,GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        camera.position.y -= 0.05f;
+    }
+
+    if (glfwGetKey(window,GLFW_KEY_E) == GLFW_PRESS)
+    {
+        camera.position.y += 0.05f;
+    }
+
 }
