@@ -619,22 +619,46 @@ else
 
     ImGui::End();
 }
-        ImGui::Begin("Render Settings");
-        static bool mip = true; // or init from engine via callback if you have one
-        if (ImGui::Checkbox("Use Mipmaps", &mip))
-        {
-            pushMessage(std::make_unique<SetMipmapsEnabledMessage>(mip));
-        }
-        ImGui::End();
-
 
     }
+    // ---------------------------
+    // Render Settings (ONE window)
+    // ---------------------------
     ImGui::Begin("Render Settings");
+
+    static bool mip = true;
+    if (ImGui::Checkbox("Use Mipmaps", &mip))
+        pushMessage(std::make_unique<SetMipmapsEnabledMessage>(mip));
+
     static bool shadows = true;
     if (ImGui::Checkbox("Enable Shadows", &shadows))
-    {
         pushMessage(std::make_unique<SetShadowsEnabledMessage>(shadows));
+
+    ImGui::Checkbox("Show FPS", &showPerf_);
+
+    ImGui::End();
+
+    ImGui::Begin("Viewport", nullptr,
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoScrollWithMouse |
+        ImGuiWindowFlags_NoBackground); // important: don’t hide the OpenGL scene
+
+    // Get viewport content rect in SCREEN space
+    ImVec2 winPos = ImGui::GetWindowPos();
+    ImVec2 crMin  = ImGui::GetWindowContentRegionMin();
+    ImVec2 crMax  = ImGui::GetWindowContentRegionMax();
+    ImVec2 vpMin  = ImVec2(winPos.x + crMin.x, winPos.y + crMin.y);
+    ImVec2 vpMax  = ImVec2(winPos.x + crMax.x, winPos.y + crMax.y);
+
+    // Draw FPS in top-right of viewport content
+    if (showPerf_)
+    {
+        ImGui::SetCursorScreenPos(ImVec2(vpMax.x - 120.0f, vpMin.y + 10.0f));
+        ImGui::Text("FPS: %.1f", fps_);
+        ImGui::SetCursorScreenPos(ImVec2(vpMax.x - 120.0f, vpMin.y + 30.0f));
+        ImGui::Text("MS:  %.2f", ms_);
     }
+
     ImGui::End();
 
 

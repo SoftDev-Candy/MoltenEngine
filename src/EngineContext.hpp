@@ -94,7 +94,7 @@ private:
 
     //To calculate FPS time//
     double fpsTimer = 0.0f;
-    int framer = 0;
+    int fpsFrames = 0;
     float fpsValue = 0.0f;
     float msValue = 0.0f;
 

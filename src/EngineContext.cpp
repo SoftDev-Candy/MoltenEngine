@@ -334,7 +334,11 @@ void EngineContext::update()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
 
+    //FPS FrameRate Call here//
+    DisplayCalculateFrameRate();
+
     UI::BeginDockspaceAndTopBar();
+
     CameraControls(camera);
 
     ui.Draw(scene, camera, selectedIndex,
@@ -353,6 +357,8 @@ void EngineContext::update()
 
     // Message vomit : UI asks, Engine does -- Like when thy wife commands you must follow//
     ProcessMessages();
+    ui.SetPerfStats(fpsValue, msValue);
+
 
 }
 
@@ -530,6 +536,19 @@ void EngineContext::DisplayCalculateFrameRate()
 
 //TODO -- Calculate Frame Rate//
 
+    //Accumulate//
+    fpsTimer += deltaTime;
+    fpsFrames++; // Incrementing FPS frames here
+
+    //Stable Readout we update around 4 to 5 times per second
+    if ( fpsTimer >= 0.25 )
+    {
+        fpsValue = (float)fpsFrames / (float)fpsTimer;
+        msValue  = (fpsValue > 0.0f) ? (1000.0f / fpsValue) : 0.0f;
+
+        fpsFrames = 0;
+        fpsTimer = 0.0;
+    }
 }
 
 SceneObject * EngineContext::FindObject(Entity e)
