@@ -78,6 +78,9 @@ Camera camera;
 
     void CameraControls (Camera& camera);
 
+    //Calculate FPS
+    void DisplayCalculateFrameRate();
+    SceneObject* FindObject(Entity e);
 
 private:
 
@@ -88,6 +91,13 @@ private:
     bool useMipmaps = true;
     float deltaTime = 0.0f;
     double lastTime = 0.0f;
+
+    //To calculate FPS time//
+    double fpsTimer = 0.0f;
+    int framer = 0;
+    float fpsValue = 0.0f;
+    float msValue = 0.0f;
+
 
 
 };

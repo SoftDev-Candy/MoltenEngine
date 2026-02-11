@@ -19,7 +19,6 @@
 #include "ui/EditorWidgets.hpp"
 #include "MemoryDebug.hpp"
 
-
 bool EngineContext::ImportTexture(const std::string& key, const std::string& path)
 {
     Texture* t = textureManager.Add(key, std::make_unique<Texture>(path.c_str()));
@@ -203,7 +202,7 @@ void EngineContext::init()
     glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
 
     //Create window here now if not created terminate that mfer
-    window = glfwCreateWindow(900,800,"B_WEngine",nullptr,nullptr);
+    window = glfwCreateWindow(900,800,"MoltenEngine",nullptr,nullptr);
     if (window == NULL )
     {
         std::cout<<"Failed to create GLFW Window"<<std::endl;
@@ -269,31 +268,28 @@ void EngineContext::init()
         0, 1, 5, 5, 4, 0 // bottom face
     };
 
-    //FIXME: this is getting too cryptic need to ask for a better solution for this
-    //No one is going to understand this jargon //
-    //....yeah pastme ---what was i doing here again bruv??//
+    //Creating a CubeMesh here using the indices and vertices from above //
     cubeMesh= meshmanager.Add( "Cube",
         std::make_unique<Mesh>(vertices, 40, indices,36)
     );
+
     renderer.SetLightGizmoMesh(meshmanager.Get("Cube"));
     Mesh* dbg = meshmanager.Get("Cube");
     std::cout << "[Debug] Cube mesh ptr = " << dbg << "\n";
     renderer.SetLightGizmoMesh(dbg);
 
-
-
     shadermanager.LoadShader("Default",VertexShaderSource,FragmentShaderSource);
     renderer.SetActiveShader(shadermanager.GetShader("Default"));
 
     //TODO: move this into TextureManager later, for now just prove pipeline works//
-    texture = textureManager.Add("Default", std::make_unique<Texture>("../assets/texture.png"));
+    texture = textureManager.Add("Default", std::make_unique<Texture>("../assets/FlatNormalMap.png"));
     renderer.SetActiveTexture(texture);
     renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
 
 
 
     ObjMeshData imported = LoadOBJ("../assets/models/Cube2.obj", false);
-    //Light GIZMO sigular call here //
+    //Light GIZMO singular call here //
 
 
     if(!imported.vertices.empty() && !imported.indices.empty())
@@ -308,6 +304,9 @@ void EngineContext::init()
         );
     }
 
+    lastTime = glfwGetTime();
+
+    //Print Memory Status Here//
     PrintMemoryStatus();
 
 }
@@ -321,6 +320,15 @@ void EngineContext::update()
 {
 
      glfwPollEvents();
+
+    double TimeNow = glfwGetTime();
+    deltaTime = (float)(TimeNow - lastTime);
+    lastTime = TimeNow;
+
+    //Calculate Delta Time//
+    if ( deltaTime > 0.05f ) deltaTime = 0.05f;
+
+
     //Start the frame for imgui
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
@@ -343,7 +351,7 @@ void EngineContext::update()
         [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); }
     );
 
-    // Message vomit : UI asks, Engine does.
+    // Message vomit : UI asks, Engine does -- Like when thy wife commands you must follow//
     ProcessMessages();
 
 }
@@ -380,8 +388,6 @@ void EngineContext::Terminate()
 //Destroy Imgui before window otherwise it can cause various issues later //
     glfwDestroyWindow(window);
     glfwTerminate();
-
-
 
 }
 
@@ -483,35 +489,52 @@ void EngineContext::SetShadowsEnabled(bool enabled)
 
 void EngineContext::CameraControls(Camera& camera)
 {
+    const float camSpeed = 3.0f; // units per second
+
     //Made the movement go up and down , side to side to like a rollercoaster//
-    if (glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS)
-    {
-        camera.position.z -= 0.05f;
-    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+         camera.position.z -= camSpeed * deltaTime;
+        }
 
-    if (glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS)
-    {
-        camera.position.z += 0.05f;
-    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+         camera.position.z += camSpeed * deltaTime;
+        }
 
-    if (glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS)
-    {
-        camera.position.x -= 0.05f;
-    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+         camera.position.x -= camSpeed * deltaTime;
+        }
 
-    if (glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS)
-    {
-        camera.position.x += 0.05f;
-    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+         camera.position.x += camSpeed * deltaTime;
+        }
 
-    if (glfwGetKey(window,GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        camera.position.y -= 0.05f;
-    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        {
+         camera.position.y -= camSpeed * deltaTime;
+        }
 
-    if (glfwGetKey(window,GLFW_KEY_E) == GLFW_PRESS)
-    {
-        camera.position.y += 0.05f;
-    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        {
+         camera.position.y += camSpeed * deltaTime;
+        }
 
+
+}
+
+void EngineContext::DisplayCalculateFrameRate()
+{
+
+//TODO -- Calculate Frame Rate//
+
+}
+
+SceneObject * EngineContext::FindObject(Entity e)
+{
+    for (auto& o : scene.GetObjects())
+    if (o.entity.Id == e.Id) return &o;
+    return nullptr;
 }
