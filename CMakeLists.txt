@@ -59,8 +59,7 @@ add_executable(MoltenEngine src/main.cpp
         src/ObjLoader.hpp
         src/TextureManager.cpp
         src/TextureManager.hpp
-        src/Message/Message.cpp
-        src/Message/Message.hpp
+        src/message/Message.hpp
         src/message/FileDroppedMessage.cpp
         src/message/FileDroppedMessage.hpp
         src/message/MessageQueue.cpp
