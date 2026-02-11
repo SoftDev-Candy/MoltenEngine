@@ -495,38 +495,96 @@ void EngineContext::SetShadowsEnabled(bool enabled)
 
 void EngineContext::CameraControls(Camera& camera)
 {
+
+    ImGuiIO& gui_io = ImGui::GetIO();
+
+    // Only rotate camera if ImGui isn't using the mouse (clicking UI, dragging sliders, etc.)
+    bool canUseMouse = !gui_io.WantCaptureMouse;
+
+    bool wantLook = canUseMouse && (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+
+    if (wantLook && !mouseLookActive)
+    {
+        mouseLookActive = true;
+        firstMouse = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+    else if (!wantLook && mouseLookActive)
+    {
+        mouseLookActive = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    if (mouseLookActive)
+    {
+        double mx, my;
+        glfwGetCursorPos(window, &mx, &my);
+
+        if (firstMouse)
+        {
+            lastMouseX = mx;
+            lastMouseY = my;
+            firstMouse = false;
+        }
+
+        float dx = (float)(mx - lastMouseX);
+        float dy = (float)(lastMouseY - my); // inverted so moving mouse up looks up
+        lastMouseX = mx;
+        lastMouseY = my;
+
+        camera.rotation.y += dx * mouseSensitivity; // yaw
+        camera.rotation.x += dy * mouseSensitivity; // pitch
+
+        if (camera.rotation.x > pitchClamp) camera.rotation.x = pitchClamp;
+        if (camera.rotation.x < -pitchClamp) camera.rotation.x = -pitchClamp;
+    }
+
+    // --- movement next (below) ---
+
     const float camSpeed = 3.0f; // units per second
+    float yawRad   = glm::radians(camera.rotation.y);
+    float pitchRad = glm::radians(camera.rotation.x);
+
+    glm::vec3 forward;
+    forward.x = cosf(pitchRad) * cosf(yawRad);
+    forward.y = sinf(pitchRad);
+    forward.z = cosf(pitchRad) * sinf(yawRad);
+    forward = glm::normalize(forward);
+
+    glm::vec3 worldUp(0, 1, 0);
+    glm::vec3 right = glm::normalize(glm::cross(forward, worldUp));
+    glm::vec3 up    = glm::normalize(glm::cross(right, forward));
 
     //Made the movement go up and down , side to side to like a rollercoaster//
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        {
-         camera.position.z -= camSpeed * deltaTime;
-        }
+    {
+        camera.position += forward * camSpeed * deltaTime;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        {
-         camera.position.z += camSpeed * deltaTime;
-        }
+    {
+        camera.position -= forward * camSpeed * deltaTime;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
-         camera.position.x -= camSpeed * deltaTime;
-        }
+    {
+        camera.position -= right * camSpeed * deltaTime;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        {
-         camera.position.x += camSpeed * deltaTime;
-        }
+    {
+        camera.position += right * camSpeed * deltaTime;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        {
-         camera.position.y -= camSpeed * deltaTime;
-        }
+    {
+        camera.position -= worldUp * camSpeed * deltaTime;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        {
-         camera.position.y += camSpeed * deltaTime;
-        }
+    {
+        camera.position += worldUp * camSpeed * deltaTime;
+    }
 
 
 }

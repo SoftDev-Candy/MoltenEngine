@@ -98,6 +98,13 @@ private:
     float fpsValue = 0.0f;
     float msValue = 0.0f;
 
+    //For mouse camera movement
+    bool mouseLookActive = false;
+    bool firstMouse = true;
+    double lastMouseX = 0.0, lastMouseY = 0.0;
+
+    float mouseSensitivity = 0.12f;   // tweak
+    float pitchClamp = 89.0f;
 
 
 };
