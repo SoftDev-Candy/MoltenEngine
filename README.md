@@ -1,4 +1,4 @@
-<h1 align="center">MoltenEngine</h1>
+<h1 align="center">🌋MoltenEngine</h1>
 
 <p align="center">
 A lightweight <strong>C++20</strong> learning engine using <strong>OpenGL + GLFW</strong>, built with <strong>CMake</strong> and developed in <strong>CLion</strong>.<br/>
@@ -9,6 +9,17 @@ Designed to stay small and readable while evolving toward an editor-style workfl
 📄 <strong>Architecture Document</strong><br/>
 <a href="docs/Architecture.md">Read the Architecture Document</a>
 </p>
+
+<h3 align="center">🚧 Progress (Video)</h3>
+
+<p align="center">
+  <img src="progress/EngineProgress.gif" alt="MoltenEngine Progress - GIF" width="850" />
+</p>
+
+<p align="center">
+  <a href="progress/EngineProgress12Feb.mp4"><strong>▶️ Watch: EngineProgress12Feb</strong></a>
+</p>
+
 
 ---
 
