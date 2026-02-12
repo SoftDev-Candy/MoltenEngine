@@ -586,7 +586,6 @@ void EngineContext::CameraControls(Camera& camera)
         camera.position += worldUp * camSpeed * deltaTime;
     }
 
-
 }
 
 void EngineContext::DisplayCalculateFrameRate()
