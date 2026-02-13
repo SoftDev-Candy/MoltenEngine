@@ -1,8 +1,8 @@
 #include<iostream>
-
 #include "Cube.hpp"
 #include "EngineContext.hpp"
 #include "Triangle.hpp"
+
 
 static void framebuffer_size_callback(GLFWwindow* , int w , int h)
 {
@@ -15,7 +15,6 @@ int main(void)
 EngineContext EngineObject;
 EngineObject.init();
     //Adding cube objects //
-    //FIXME: Make it so that we dont have to do this manually everytime//
 
     EngineObject.CreateCube("Cube 1");
 
@@ -23,8 +22,6 @@ EngineObject.init();
 
     obj1.transform.position = glm ::vec3(1.0f, 0.0f,0.0f);
     obj1.name = "Cube 1";
-
-
 
     //Its while loop to keep that window open//we
     while (!EngineObject.ShouldClose())

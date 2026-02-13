@@ -94,9 +94,13 @@ add_executable(MoltenEngine src/main.cpp
         src/message/SetMipmapsEnabledMessage.hpp
         src/message/SetShadowsEnabledMessage.cpp
         src/message/SetShadowsEnabledMessage.hpp
-
+        external/nlohmann/json.hpp
 )
 
+add_executable(SplineShooter
+        game/Game.cpp
+        game/Game.hpp
+)
 find_package(OpenGL REQUIRED)
 
 target_link_libraries( MoltenEngine PRIVATE
@@ -111,8 +115,9 @@ target_include_directories(MoltenEngine PRIVATE
         external/glm
         external/imgui
         external/stb
+        external/nlohmann
         message/
     )
 
-#Had an error so basically need to tell the linker its a console app and we are not going to be using winmain() but just main()
+#Had an error so basically need to tell the linker its a console app and we are not going to be using win main() but just main()
 set_target_properties(MoltenEngine PROPERTIES WIN32_EXECUTABLE OFF)
