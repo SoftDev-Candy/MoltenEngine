@@ -95,6 +95,12 @@ add_executable(MoltenEngine src/main.cpp
         src/message/SetShadowsEnabledMessage.cpp
         src/message/SetShadowsEnabledMessage.hpp
         external/nlohmann/json.hpp
+        src/message/SceneSerializer.cpp
+        src/message/SceneSerializer.hpp
+        src/message/SaveSceneMessage.cpp
+        src/message/SaveSceneMessage.hpp
+        src/message/LoadSceneMessage.cpp
+        src/message/LoadSceneMessage.hpp
 )
 
 add_executable(SplineShooter

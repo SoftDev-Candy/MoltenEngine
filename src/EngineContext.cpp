@@ -113,7 +113,6 @@ void EngineContext::ProcessMessages()
 
 }
 
-
 bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& path)
 {
     ObjMeshData imported = LoadOBJ(path, false);
