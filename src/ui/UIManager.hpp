@@ -33,6 +33,8 @@ public:
 
         void SetPerfStats(float fps, float ms) { fps_ = fps; ms_ = ms; }
 
+    void LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pushMessage);
+
 
 private:
     bool showPerf_ = true;

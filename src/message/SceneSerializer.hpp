@@ -12,7 +12,7 @@ class Camera;
 
 namespace SceneSerializer
 {
-    bool Save(const std::string& path, const Scene& scene, const Camera& cam,
+    bool Save(const std::string& path,  Scene& scene, const Camera& cam,
               bool mipmapsEnabled, bool shadowsEnabled);
 
     bool Load(const std::string& path, Scene& scene, Camera& cam,

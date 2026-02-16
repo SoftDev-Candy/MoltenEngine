@@ -3,3 +3,10 @@
 //
 
 #include "SaveSceneMessage.hpp"
+#include "../EngineContext.hpp"
+
+
+void SaveSceneMessage::Dispatch(EngineContext &engine)
+{
+    engine.SaveScene(path_);
+}

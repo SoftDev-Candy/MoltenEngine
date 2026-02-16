@@ -1,0 +1,97 @@
+{
+  "camera": {
+    "fov": 45.0,
+    "position": [
+      0.0,
+      0.0,
+      3.0
+    ],
+    "rotation": [
+      -3.599998712539673,
+      -116.27998352050781,
+      0.0
+    ]
+  },
+  "lights": [
+    {
+      "ambientStrength": 0.15000000596046448,
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "innerAngle": 12.0,
+      "intensity": 2.0,
+      "outerAngle": 18.0,
+      "position": [
+        2.0,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        0.0,
+        -90.0,
+        0.0
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "albedoKey": "None",
+      "id": 1,
+      "meshKey": "Cube",
+      "name": "Cube 1",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 2,
+      "meshKey": "ImportedOBJ",
+      "name": "Imported_0",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  ],
+  "settings": {
+    "mipmapsEnabled": true,
+    "shadowsEnabled": true
+  },
+  "version": 1
+}

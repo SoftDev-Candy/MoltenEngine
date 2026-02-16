@@ -5,9 +5,17 @@
 #ifndef B_WENGINE_LOADSCENEMESSAGE_HPP
 #define B_WENGINE_LOADSCENEMESSAGE_HPP
 
+#include "Message.hpp"
+#include <string>
 
-class LoadSceneMessage
+class LoadSceneMessage : public Message
 {
+public:
+    explicit LoadSceneMessage(std::string path) : path_(std::move(path)) {}
+    void Dispatch(EngineContext& engine) override;
+
+private:
+    std::string path_;
 };
 
 

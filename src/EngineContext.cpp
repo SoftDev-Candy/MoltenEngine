@@ -18,6 +18,39 @@
 #include "ui/EditorStyle.hpp"
 #include "ui/EditorWidgets.hpp"
 #include "MemoryDebug.hpp"
+#include "message/SceneSerializer.hpp"
+
+// Save current editor state
+bool EngineContext::SaveScene(const std::string& path)
+{
+    return SceneSerializer::Save(path, scene, camera, mipmapsEnabled_, shadowsEnabled_);
+}
+
+bool EngineContext::LoadScene(const std::string& path)
+{
+    bool mip = mipmapsEnabled_;
+    bool sh  = shadowsEnabled_;
+
+    if (!SceneSerializer::Load(path, scene, camera, mip, sh))
+        return false;
+
+    SetMipmapsEnabled(mip);
+    SetShadowsEnabled(sh);
+    return true;
+}
+
+void EngineContext::RebindSceneAssetPointers()
+{
+    for (auto& o : scene.GetObjects())
+    {
+        o.mesh.mesh = meshmanager.Get(o.meshKey);
+
+        o.texture  = textureManager.Get(o.textureKey);
+        o.albedo   = textureManager.Get(o.albedoKey);
+        o.specular = textureManager.Get(o.specularKey);
+    }
+}
+
 
 bool EngineContext::ImportTexture(const std::string& key, const std::string& path)
 {
@@ -335,6 +368,8 @@ void EngineContext::update()
 
     //FPS FrameRate Call here//
     DisplayCalculateFrameRate();
+
+    ui.LoadSaveSceneUI([this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); });
 
     UI::BeginDockspaceAndTopBar();
 

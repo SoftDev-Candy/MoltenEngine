@@ -3,3 +3,9 @@
 //
 
 #include "LoadSceneMessage.hpp"
+#include "../EngineContext.hpp"
+
+void LoadSceneMessage::Dispatch(EngineContext& engine)
+{
+    engine.LoadScene(path_);
+}

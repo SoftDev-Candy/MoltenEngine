@@ -82,6 +82,16 @@ Camera camera;
     void DisplayCalculateFrameRate();
     SceneObject* FindObject(Entity e);
 
+    //Save and Load Scene functions
+    bool SaveScene(const std::string& path);
+    bool LoadScene(const std::string& path);
+    void RebindSceneAssetPointers();
+
+    bool mipmapsEnabled_ = true;
+    bool shadowsEnabled_ = true;
+
+
+
 private:
 
     GLFWwindow* window;

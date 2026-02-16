@@ -24,6 +24,9 @@
 #include "../message/SetEntityShininessMessage.hpp"
 #include "../message/SetMipmapsEnabledMessage.hpp"
 #include "../message/SetShadowsEnabledMessage.hpp"
+#include "../message/SaveSceneMessage.hpp"
+#include "../message/LoadSceneMessage.hpp"
+
 
 
 static std::string GetFileStem(const char* path)
@@ -50,10 +53,8 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                      std::function<void(std::unique_ptr<Message>)> pushMessage)
 {
     ImGui::Begin("Scene Hierarchy");
-
-    // ---------------------------
-    // QUICK ADD BUTTONS (so the teacher can SEE it, not just "trust me bro")
-    // ---------------------------
+    //
+    //Quick Add buttons
     static int cubeCounter = 0;
     static int importedCounter = 0;
     if (ImGui::Button("+ Add Cube"))
@@ -663,3 +664,61 @@ else
 
 
 }
+
+void UIManager::LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pushMessage)
+{
+    static char scenePath[256] = "../scenes/test.scene.json";
+    static bool openSave = false;
+    static bool openLoad = false;
+
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Save Scene...")) openSave = true;
+            if (ImGui::MenuItem("Load Scene...")) openLoad = true;
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
+    if (openSave) ImGui::OpenPopup("Save Scene");
+    if (ImGui::BeginPopupModal("Save Scene", &openSave, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("Path", scenePath, sizeof(scenePath));
+        if (ImGui::Button("Save"))
+        {
+            pushMessage(std::make_unique<SaveSceneMessage>(std::string(scenePath)));
+            openSave = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            openSave = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (openLoad) ImGui::OpenPopup("Load Scene");
+    if (ImGui::BeginPopupModal("Load Scene", &openLoad, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("Path", scenePath, sizeof(scenePath));
+        if (ImGui::Button("Load"))
+        {
+            pushMessage(std::make_unique<LoadSceneMessage>(std::string(scenePath)));
+            openLoad = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            openLoad = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+}
+

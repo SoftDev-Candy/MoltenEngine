@@ -15,8 +15,9 @@ static ImVec4 Molten2() { return ImVec4(0.88f, 0.33f, 0.20f, 1.00f); }
 void BeginDockspaceAndTopBar()
 {
     ImGuiViewport* vp = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(vp->Pos);
-    ImGui::SetNextWindowSize(vp->Size);
+    ImGui::SetNextWindowPos(vp->WorkPos);
+    ImGui::SetNextWindowSize(vp->WorkSize);
+
     ImGui::SetNextWindowViewport(vp->ID);
 
     ImGuiWindowFlags flags =
@@ -39,8 +40,8 @@ void BeginDockspaceAndTopBar()
     // Glass top bar (fake "glass frame")
     const float barH = 42.0f;
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    ImVec2 p0 = vp->Pos;
-    ImVec2 p1 = ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + barH);
+    ImVec2 p0 = vp->WorkPos;
+    ImVec2 p1 = ImVec2(vp->WorkPos.x + vp->WorkSize.x, vp->WorkPos.y + barH);
 
     ImU32 topA = ImGui::GetColorU32(ImVec4(1,1,1,0.10f));
     ImU32 topB = ImGui::GetColorU32(ImVec4(0,0,0,0.35f));
