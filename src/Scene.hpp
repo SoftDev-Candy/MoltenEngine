@@ -100,6 +100,14 @@ Entity CreateObject()
     return false;
 }
 
+    void RecalculateNextId()
+{
+    EntityID maxId = 0;
+    for (auto& o : objects) maxId = std::max(maxId, o.entity.Id);
+    nextId = maxId + 1;
+}
+
+
 //Improved delete
     bool DeleteEntity(Entity e, int& selectedIndex)
 {

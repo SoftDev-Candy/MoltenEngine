@@ -23,20 +23,50 @@
 // Save current editor state
 bool EngineContext::SaveScene(const std::string& path)
 {
-    return SceneSerializer::Save(path, scene, camera, mipmapsEnabled_, shadowsEnabled_);
-}
+return SceneSerializer::Save(path, scene, camera, mipmapsEnabled_, shadowsEnabled_, meshmanager, textureManager);}
 
 bool EngineContext::LoadScene(const std::string& path)
 {
     bool mip = mipmapsEnabled_;
     bool sh  = shadowsEnabled_;
 
+
+
+    //I messed up the naming bad here Mip is mipmapsEnables and Sh is shadowsEnabled
     if (!SceneSerializer::Load(path, scene, camera, mip, sh))
         return false;
 
     SetMipmapsEnabled(mip);
     SetShadowsEnabled(sh);
+
+    ResolveSceneAfterLoad();
+
     return true;
+}
+
+void EngineContext::ResolveSceneAfterLoad()
+{
+
+    for (auto& o : scene.GetObjects())
+    {
+        o.mesh.mesh = meshmanager.Get(o.meshKey);
+
+        // optional legacy/fallback
+        o.texture   = textureManager.Get(o.textureKey);
+
+        o.albedo    = textureManager.Get(o.albedoKey);
+        o.specular  = textureManager.Get(o.specularKey);
+
+        // reasonable fallbacks so you see *something*
+        if (!o.albedo)   o.albedo   = o.texture;
+        if (!o.specular) o.specular = o.albedo;
+    }
+
+    // if you use selection by index, safest after load:
+    selectedIndex = -1;
+
+
+
 }
 
 void EngineContext::RebindSceneAssetPointers()
@@ -58,6 +88,7 @@ bool EngineContext::ImportTexture(const std::string& key, const std::string& pat
     if (t)
     {
         t->ApplySampling(useMipmaps); // <-- IMPORTANT: new texture respects UI toggle
+        textureManager.SetSourcePath(key, path);
     }
     return t != nullptr;
 }
@@ -170,7 +201,7 @@ bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& p
             imported.indices.size() , 8
         )
     );
-
+    meshmanager.SetSourcePath(key, path);
     return true;
 }
 

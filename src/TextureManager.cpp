@@ -50,3 +50,14 @@ void TextureManager::Clear()
 {
     textures.clear();
 }
+
+void TextureManager::SetSourcePath(const std::string &key, const std::string &path)
+{
+    sourcePaths[key] = path;
+}
+
+std::string TextureManager::GetSourcePath(const std::string &key) const
+{
+    auto it = sourcePaths.find(key);
+    return (it != sourcePaths.end()) ? it->second : "";
+}

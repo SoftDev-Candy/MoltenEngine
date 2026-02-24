@@ -15,6 +15,7 @@ class MeshManager
 private:
     //Although there are some memory trade-off this auto cleans itself...better that then to do it manually//
 std::unordered_map<std::string , std::unique_ptr<Mesh>> meshes;
+    std::unordered_map<std::string, std::string> sourcePaths;
 
     //Add API's in here for add and get //
 public:
@@ -25,6 +26,8 @@ public:
     std::vector<std::string> Keys() const; //for UI listing
     void Clear(); //IMPORTANT: delete GL stuff BEFORE context dies
 
+    void SetSourcePath(const std::string& key, const std::string& path) ;
+    std::string GetSourcePath(const std::string& key) const;
 
 
 

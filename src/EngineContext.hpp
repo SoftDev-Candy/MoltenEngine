@@ -85,6 +85,7 @@ Camera camera;
     //Save and Load Scene functions
     bool SaveScene(const std::string& path);
     bool LoadScene(const std::string& path);
+    void ResolveSceneAfterLoad();
     void RebindSceneAssetPointers();
 
     bool mipmapsEnabled_ = true;

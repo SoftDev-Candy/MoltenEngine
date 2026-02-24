@@ -13,6 +13,7 @@
 #include "glm/vec3.hpp"
 #include <filesystem>
 #include <iostream>
+#include <unordered_set>
 
 
 using json = nlohmann::json;
@@ -34,8 +35,10 @@ static glm::vec3 JsonToVec3(const json& j, const glm::vec3& fallback)
 
 namespace SceneSerializer
 {
-    bool Save(const std::string& path,  Scene& scene, const Camera& cam,
-              bool mipmapsEnabled, bool shadowsEnabled)
+    bool Save(const std::string& path, Scene& scene, const Camera& cam,
+          bool mipmapsEnabled, bool shadowsEnabled,
+          const MeshManager& meshMgr,
+          const TextureManager& texMgr)
     {
 
         std::filesystem::path p(path);
@@ -70,7 +73,21 @@ namespace SceneSerializer
                 {"ambientStrength", L.ambientStrength}
             });
         }
+        root["assets"]["meshes"] = json::array();
+        for (auto& k : usedMeshes)
+        {
+            std::string src = meshMgr.GetSourcePath(k);
+            if (!src.empty())
+                root["assets"]["meshes"].push_back({{"key", k}, {"path", src}});
+        }
 
+        root["assets"]["textures"] = json::array();
+        for (auto& k : usedTextures)
+        {
+            std::string src = texMgr.GetSourcePath(k);
+            if (!src.empty())
+                root["assets"]["textures"].push_back({{"key", k}, {"path", src}});
+        }
         // Objects
         root["objects"] = json::array();
         for (const auto& object : scene.GetObjects())
@@ -93,6 +110,18 @@ namespace SceneSerializer
             jso_nobj["shininess"]   = object.shininess;
 
             root["objects"].push_back(jso_nobj);
+        }
+
+        std::unordered_set<std::string> usedMeshes;
+        std::unordered_set<std::string> usedTextures;
+
+        for (const auto& object : scene.GetObjects())
+        {
+            if (object.meshKey != "None") usedMeshes.insert(object.meshKey);
+
+            if (object.textureKey != "None")  usedTextures.insert(object.textureKey);
+            if (object.albedoKey != "None")   usedTextures.insert(object.albedoKey);
+            if (object.specularKey != "None") usedTextures.insert(object.specularKey);
         }
 
         std::ofstream out(path);
@@ -153,6 +182,24 @@ namespace SceneSerializer
                 scene.GetLights().push_back(L);
             }
         }
+        if (scene.GetLights().empty())
+            scene.GetLights().push_back(Light{});
+
+        outMeshes.clear();
+        outTextures.clear();
+
+        if (root.contains("assets"))
+        {
+            auto& a = root["assets"];
+
+            if (a.contains("meshes") && a["meshes"].is_array())
+                for (auto& m : a["meshes"])
+                    outMeshes.push_back({ m.value("key",""), m.value("path","") });
+
+            if (a.contains("textures") && a["textures"].is_array())
+                for (auto& t : a["textures"])
+                    outTextures.push_back({ t.value("key",""), t.value("path","") });
+        }
 
         // Objects
         if (root.contains("objects") && root["objects"].is_array())
@@ -187,6 +234,7 @@ namespace SceneSerializer
                 scene.GetObjects().push_back(o);
             }
         }
+        scene.RecalculateNextId();
 
         return true;
     }

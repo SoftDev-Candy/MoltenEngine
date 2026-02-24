@@ -58,3 +58,14 @@ void MeshManager::Clear()
     meshes.clear();
 }
 
+void MeshManager::SetSourcePath(const std::string &key, const std::string &path)
+{
+    sourcePaths[key] = path;
+}
+
+std::string MeshManager::GetSourcePath(const std::string &key) const
+{
+    auto it = sourcePaths.find(key);
+    return (it != sourcePaths.end()) ? it->second : "";
+}
+

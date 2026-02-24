@@ -12,6 +12,8 @@ class TextureManager
 private:
     //Although there are some memory trade-off this auto cleans itself...better that then to do it manually//
     std::unordered_map<std::string, std::unique_ptr<Texture>> textures;
+    std::unordered_map<std::string, std::string> sourcePaths;
+
 
 public:
     Texture* Add(const std::string& key, std::unique_ptr<Texture> tex);
@@ -19,6 +21,10 @@ public:
     bool Has(const std::string& key) const; //Just a check incase we don't want errors to be thrown//
     std::vector<std::string> Keys() const;  //for UI listing
     void Clear();                           //IMPORTANT: delete GL stuff BEFORE context dies
+
+    void SetSourcePath(const std::string& key, const std::string& path);
+    std::string GetSourcePath(const std::string& key) const;
+
 };
 
 #endif
