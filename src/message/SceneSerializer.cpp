@@ -47,6 +47,8 @@ namespace SceneSerializer
 
         json root;
         root["version"] = 1;
+        std::unordered_set<std::string> usedMeshes;
+        std::unordered_set<std::string> usedTextures;
 
         root["settings"] = {
             {"mipmapsEnabled", mipmapsEnabled},
@@ -73,6 +75,17 @@ namespace SceneSerializer
                 {"ambientStrength", L.ambientStrength}
             });
         }
+
+        // Objects
+        root["objects"] = json::array();
+        for (const auto& object : scene.GetObjects())
+        {
+            if (object.meshKey != "None") usedMeshes.insert(object.meshKey);
+
+            if (object.textureKey != "None")  usedTextures.insert(object.textureKey);
+            if (object.albedoKey != "None")   usedTextures.insert(object.albedoKey);
+            if (object.specularKey != "None") usedTextures.insert(object.specularKey);
+        }
         root["assets"]["meshes"] = json::array();
         for (auto& k : usedMeshes)
         {
@@ -88,8 +101,6 @@ namespace SceneSerializer
             if (!src.empty())
                 root["assets"]["textures"].push_back({{"key", k}, {"path", src}});
         }
-        // Objects
-        root["objects"] = json::array();
         for (const auto& object : scene.GetObjects())
         {
             json jso_nobj;
@@ -112,17 +123,7 @@ namespace SceneSerializer
             root["objects"].push_back(jso_nobj);
         }
 
-        std::unordered_set<std::string> usedMeshes;
-        std::unordered_set<std::string> usedTextures;
 
-        for (const auto& object : scene.GetObjects())
-        {
-            if (object.meshKey != "None") usedMeshes.insert(object.meshKey);
-
-            if (object.textureKey != "None")  usedTextures.insert(object.textureKey);
-            if (object.albedoKey != "None")   usedTextures.insert(object.albedoKey);
-            if (object.specularKey != "None") usedTextures.insert(object.specularKey);
-        }
 
         std::ofstream out(path);
         if (!out.is_open())
@@ -136,7 +137,9 @@ namespace SceneSerializer
     }
 
     bool Load(const std::string& path, Scene& scene, Camera& cam,
-              bool& mipmapsEnabled, bool& shadowsEnabled)
+              bool& mipmapsEnabled, bool& shadowsEnabled,
+              std::vector<std::pair<std::string,std::string>>& outMeshes,
+              std::vector<std::pair<std::string,std::string>>& outTextures)
     {
         std::ifstream in(path);
         if (!in.is_open()) return false;

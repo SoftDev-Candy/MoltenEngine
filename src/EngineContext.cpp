@@ -30,20 +30,26 @@ bool EngineContext::LoadScene(const std::string& path)
     bool mip = mipmapsEnabled_;
     bool sh  = shadowsEnabled_;
 
+    std::vector<std::pair<std::string,std::string>> meshAssets, texAssets;
 
-
-    //I messed up the naming bad here Mip is mipmapsEnables and Sh is shadowsEnabled
-    if (!SceneSerializer::Load(path, scene, camera, mip, sh))
+    if (!SceneSerializer::Load(path, scene, camera, mip, sh, meshAssets, texAssets))
         return false;
+
+    // auto-import missing assets
+    for (auto& [k,p] : meshAssets)
+        if (!k.empty() && !p.empty() && !meshmanager.Has(k))
+            ImportObjAsMesh(k, p);
+
+    for (auto& [k,p] : texAssets)
+        if (!k.empty() && !p.empty() && !textureManager.Has(k))
+            ImportTexture(k, p);
 
     SetMipmapsEnabled(mip);
     SetShadowsEnabled(sh);
 
     ResolveSceneAfterLoad();
-
     return true;
 }
-
 void EngineContext::ResolveSceneAfterLoad()
 {
 

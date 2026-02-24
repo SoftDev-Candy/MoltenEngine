@@ -7,6 +7,9 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
+#include "../MeshManager.hpp"
+#include "../TextureManager.hpp"
 
 class TextureManager;
 class MeshManager;
@@ -21,9 +24,9 @@ namespace SceneSerializer
           const TextureManager& texMgr);
 
     bool Load(const std::string& path, Scene& scene, Camera& cam,
-          bool& mipmapsEnabled, bool& shadowsEnabled,
-          std::vector<std::pair<std::string,std::string>>& outMeshes,
-          std::vector<std::pair<std::string,std::string>>& outTextures);
+              bool& mipmapsEnabled, bool& shadowsEnabled,
+              std::vector<std::pair<std::string,std::string>>& outMeshes,
+              std::vector<std::pair<std::string,std::string>>& outTextures);
 }
 
 #endif //B_WENGINE_SCENESERIALIZER_HPP
