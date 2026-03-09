@@ -3,3 +3,9 @@
 //
 
 #include "StopGameMessage.hpp"
+#include "../EngineContext.hpp"
+
+void StopGameMessage::Dispatch(EngineContext &engine)
+{
+    engine.StopGame();
+}

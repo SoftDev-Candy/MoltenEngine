@@ -5,9 +5,12 @@
 #ifndef B_WENGINE_STOPGAMEMESSAGE_HPP
 #define B_WENGINE_STOPGAMEMESSAGE_HPP
 
+#include "Message.hpp"
 
-class StopGameMessage
+struct StopGameMessage : public Message
 {
+    void Dispatch(EngineContext &engine) override;
+
 };
 
 

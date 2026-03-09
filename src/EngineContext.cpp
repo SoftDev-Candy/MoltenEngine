@@ -87,6 +87,14 @@ void EngineContext::RebindSceneAssetPointers()
     }
 }
 
+void EngineContext::StartGame()
+{
+}
+
+void EngineContext::StopGame()
+{
+}
+
 
 bool EngineContext::ImportTexture(const std::string& key, const std::string& path)
 {

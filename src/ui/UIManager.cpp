@@ -26,7 +26,7 @@
 #include "../message/SetShadowsEnabledMessage.hpp"
 #include "../message/SaveSceneMessage.hpp"
 #include "../message/LoadSceneMessage.hpp"
-
+#include "../message/StartGameMessage.hpp"
 
 
 static std::string GetFileStem(const char* path)
@@ -662,7 +662,6 @@ else
 
     ImGui::End();
 
-
 }
 
 void UIManager::LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pushMessage)
@@ -679,6 +678,14 @@ void UIManager::LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pu
             if (ImGui::MenuItem("Load Scene...")) openLoad = true;
             ImGui::EndMenu();
         }
+
+        if (ImGui::BeginMenu("Game"))
+        {
+            if (ImGui::MenuItem("Play"))pushMessage(std::make_unique<StartGameMessage>());
+            if (ImGui::MenuItem("Stop"))pushMessage(std::make_unique<StartGameMessage>());
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMainMenuBar();
     }
 

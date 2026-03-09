@@ -3,3 +3,9 @@
 //
 
 #include "StartGameMessage.hpp"
+#include "../EngineContext.hpp"
+void StartGameMessage::Dispatch(EngineContext &engine)
+{
+    engine.StartGame();
+}
+

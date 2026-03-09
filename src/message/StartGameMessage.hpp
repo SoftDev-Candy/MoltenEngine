@@ -5,10 +5,11 @@
 #ifndef B_WENGINE_STARTGAMEMESSAGE_HPP
 #define B_WENGINE_STARTGAMEMESSAGE_HPP
 
+#include"Message.hpp"
 
-class StartGameMessage
+struct StartGameMessage : public Message
 {
+    void Dispatch(EngineContext &engine) override;
 };
-
 
 #endif //B_WENGINE_STARTGAMEMESSAGE_HPP

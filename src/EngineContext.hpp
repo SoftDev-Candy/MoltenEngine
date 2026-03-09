@@ -76,6 +76,7 @@ Camera camera;
     void SetEntityShininess(Entity e, float shininess);
     void SetShadowsEnabled(bool enabled);
 
+    //Camera Function referencing the camera class
     void CameraControls (Camera& camera);
 
     //Calculate FPS
@@ -88,8 +89,13 @@ Camera camera;
     void ResolveSceneAfterLoad();
     void RebindSceneAssetPointers();
 
+    //Mipmaps Bool variables public for now
     bool mipmapsEnabled_ = true;
     bool shadowsEnabled_ = true;
+
+    //Game Start and Stop Functions
+    void StartGame();
+    void StopGame();
 
 
 
