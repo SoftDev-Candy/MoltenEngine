@@ -101,6 +101,10 @@ add_executable(MoltenEngine src/main.cpp
         src/message/SaveSceneMessage.hpp
         src/message/LoadSceneMessage.cpp
         src/message/LoadSceneMessage.hpp
+        src/message/StartGameMessage.cpp
+        src/message/StartGameMessage.hpp
+        src/message/StopGameMessage.cpp
+        src/message/StopGameMessage.hpp
 )
 
 add_executable(SplineShooter

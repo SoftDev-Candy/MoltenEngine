@@ -147,7 +147,7 @@ void EngineContext::SetEntityTexture(Entity e, const std::string& textureKey)
         //Delete it
         scene.DestroyObjectAt((size_t)selectedIndex);
 
-        //Fix selectedIndex so it doesn't point into garbage
+        //Fix selectedIndex so it doesn't point into garbage update --- it doesn't anymore
         int count = (int)scene.GetObjects().size();
         if (count == 0)
         {

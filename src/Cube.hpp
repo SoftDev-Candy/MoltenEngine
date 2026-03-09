@@ -16,7 +16,7 @@ class Cube :public Renderable
 public:
 
     Cube();//Constructor big man //
-    ~Cube();//No so constructor//
+    ~Cube();//Not constructing anymore haha//
 
     Texture* texture;
 

@@ -1,0 +1,5 @@
+//
+// Created by Candy on 3/9/2026.
+//
+
+#include "StopGameMessage.hpp"

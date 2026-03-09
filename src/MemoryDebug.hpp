@@ -11,6 +11,8 @@
     #include <windows.h>
 #endif
 
+// This is a just to get a grade I will do more work on this later or maybe when I work on another engine//.
+
 inline void PrintMemoryStatus()
 {
 #ifdef _WIN32

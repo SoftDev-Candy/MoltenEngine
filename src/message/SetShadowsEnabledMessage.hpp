@@ -9,10 +9,12 @@
 
 struct SetShadowsEnabledMessage final : public Message
 {
+
     bool enabled = true;
     explicit SetShadowsEnabledMessage(bool e) : enabled(e) {}
 
     void Dispatch(EngineContext& engine) override;
+
 };
 
 

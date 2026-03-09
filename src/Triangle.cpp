@@ -27,7 +27,7 @@ Triangle::Triangle() : shader(VertexShaderSource,FragmentShaderSource)
     //Take my floats and add it to GPU memory.
 
 //Generate a EBO here PUTA//
-     glGenBuffers(1,&EBO);
+    glGenBuffers(1,&EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER , sizeof(indices),indices,GL_STATIC_DRAW);
 

@@ -10,6 +10,7 @@
 
 class UpdateLightMessage : public Message
 {
+
 public:
     UpdateLightMessage(int index, const Light& data) : index(index), data(data) {}
     void Dispatch(EngineContext& engine) override;
@@ -17,8 +18,8 @@ public:
 private:
     int index = -1;
     Light data;
-};
 
+};
 
 
 #endif //B_WENGINE_UPDATELIGHTMESSAGE_HPP

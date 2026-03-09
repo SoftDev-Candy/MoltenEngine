@@ -10,7 +10,7 @@
 #include "glad/glad.h"
 #include "glfw/glfw3.h"
 
-//RAII is very important although could've named it literally anything else ...resource allocation is initialization...WDUM<???//
+//RAII is very important, although you could've named it literally anything else ...resource allocation is initialization...WDUM<???//
 Texture::Texture(const char *path)
 {
     int height;
@@ -111,5 +111,5 @@ void Texture::ApplySampling(bool useMipmaps)
 
 Texture::~Texture()
 {
-
+//Delete Stuff  , Delete Stuff
 }
