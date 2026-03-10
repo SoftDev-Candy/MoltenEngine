@@ -27,6 +27,7 @@
 #include "../message/SaveSceneMessage.hpp"
 #include "../message/LoadSceneMessage.hpp"
 #include "../message/StartGameMessage.hpp"
+#include "../message/StopGameMessage.hpp"
 
 
 static std::string GetFileStem(const char* path)
@@ -682,7 +683,7 @@ void UIManager::LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pu
         if (ImGui::BeginMenu("Game"))
         {
             if (ImGui::MenuItem("Play"))pushMessage(std::make_unique<StartGameMessage>());
-            if (ImGui::MenuItem("Stop"))pushMessage(std::make_unique<StartGameMessage>());
+            if (ImGui::MenuItem("Stop"))pushMessage(std::make_unique<StopGameMessage>());
             ImGui::EndMenu();
         }
 

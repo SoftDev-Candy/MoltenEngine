@@ -1,0 +1,205 @@
+{
+  "assets": {
+    "meshes": [],
+    "textures": []
+  },
+  "camera": {
+    "fov": 45.0,
+    "position": [
+      0.5136454701423645,
+      5.008913040161133,
+      12.426956176757813
+    ],
+    "rotation": [
+      -24.189374923706055,
+      269.8797302246094,
+      0.0
+    ]
+  },
+  "lights": [
+    {
+      "ambientStrength": 0.4320000112056732,
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "innerAngle": 37.46699905395508,
+      "intensity": 4.5229997634887695,
+      "outerAngle": 42.21099853515625,
+      "position": [
+        2.0,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        0.0,
+        -90.0,
+        0.0
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "albedoKey": "None",
+      "id": 2,
+      "meshKey": "Cube",
+      "name": "SplinePoint_0",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          -1.9700000286102295,
+          1.690000057220459,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 3,
+      "meshKey": "Cube",
+      "name": "SplinePoint_1",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          -0.33000001311302185,
+          1.6699999570846558,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 4,
+      "meshKey": "Cube",
+      "name": "SplinePoint_2",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          -0.36000001430511475,
+          0.550000011920929,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 5,
+      "meshKey": "Cube",
+      "name": "SplinePoint_3",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          -0.44999998807907104,
+          -0.6700000166893005,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 6,
+      "meshKey": "Cube",
+      "name": "SplinePoint_4",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          1.0,
+          -0.7099999785423279,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 7,
+      "meshKey": "Cube",
+      "name": "SplinePoint_5",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          2.450000047683716,
+          -0.6600000262260437,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  ],
+  "settings": {
+    "mipmapsEnabled": true,
+    "shadowsEnabled": true
+  },
+  "version": 1
+}
