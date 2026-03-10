@@ -404,6 +404,19 @@ void EngineContext::update()
 
     //Calculate Delta Time//
     if ( deltaTime > 0.05f ) deltaTime = 0.05f;
+
+    //Start the frame for imgui
+    ImGui_ImplGlfw_NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui::NewFrame();
+
+    //FPS FrameRate Call here//
+    DisplayCalculateFrameRate();
+
+    ui.LoadSaveSceneUI([this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); });
+
+    UI::BeginDockspaceAndTopBar();
+
     //For Controls For the Spline in play mode
     if (mode_ == EngineMode::Play)
     {
@@ -420,20 +433,6 @@ void EngineContext::update()
     {
         CameraControls(camera); // editor free-fly
     }
-
-    //Start the frame for imgui
-    ImGui_ImplGlfw_NewFrame();
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui::NewFrame();
-
-    //FPS FrameRate Call here//
-    DisplayCalculateFrameRate();
-
-    ui.LoadSaveSceneUI([this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); });
-
-    UI::BeginDockspaceAndTopBar();
-
-    CameraControls(camera);
 
     ui.Draw(scene, camera, selectedIndex,
 
