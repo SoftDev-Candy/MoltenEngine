@@ -129,6 +129,7 @@ target_include_directories(MoltenEngine PRIVATE
         external/stb
         external/nlohmann
         message/
+        game/
     )
 
 #Had an error so basically need to tell the linker its a console app and we are not going to be using win main() but just main()

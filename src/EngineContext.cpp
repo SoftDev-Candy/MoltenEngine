@@ -71,8 +71,6 @@ void EngineContext::ResolveSceneAfterLoad()
     // if you use selection by index, safest after load:
     selectedIndex = -1;
 
-
-
 }
 
 void EngineContext::RebindSceneAssetPointers()
@@ -89,10 +87,14 @@ void EngineContext::RebindSceneAssetPointers()
 
 void EngineContext::StartGame()
 {
+    mode_ = EngineMode::Play;
+    splineGame_.Start(scene);
 }
 
 void EngineContext::StopGame()
 {
+    mode_ = EngineMode::Editor;
+    splineGame_.Stop();
 }
 
 
@@ -219,13 +221,13 @@ bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& p
     return true;
 }
 
-
 static void framebuffer_size_callback(GLFWwindow* , int w , int h)
 {
 
     glViewport(0,0,w,h);
 
 }
+
 
 Entity EngineContext::CreateCube(const std::string &cubename)
 {
@@ -363,8 +365,6 @@ void EngineContext::init()
     renderer.SetActiveTexture(texture);
     renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
 
-
-
     ObjMeshData imported = LoadOBJ("../assets/models/Cube2.obj", false);
     //Light GIZMO singular call here //
 
@@ -404,7 +404,22 @@ void EngineContext::update()
 
     //Calculate Delta Time//
     if ( deltaTime > 0.05f ) deltaTime = 0.05f;
+    //For Controls For the Spline in play mode
+    if (mode_ == EngineMode::Play)
+    {
+        float sx = 0.0f, sy = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) sx -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) sx += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) sy -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) sy += 1.0f;
 
+        splineGame_.SetInput(sx, sy);
+        splineGame_.Update(deltaTime, scene, camera);
+    }
+    else
+    {
+        CameraControls(camera); // editor free-fly
+    }
 
     //Start the frame for imgui
     ImGui_ImplGlfw_NewFrame();

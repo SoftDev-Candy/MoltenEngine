@@ -6,6 +6,7 @@
 #define B_WENGINE_ENGINECONTEXT_HPP
 #include<iostream>
 #include<glad/glad.h>
+#include <memory>
 #include<GLFW/glfw3.h>
 #include "Renderer.hpp"
 #include "Scene.hpp"
@@ -18,7 +19,12 @@
 #include "TextureManager.hpp"
 #include "message/MessageQueue.hpp"
 #include "message/Message.hpp"
-#include <memory>
+#include "Game.hpp"
+
+enum class EngineMode
+{
+    Editor , Play
+};
 
 class EngineContext
 {
@@ -97,7 +103,11 @@ Camera camera;
     void StartGame();
     void StopGame();
 
+    //Engine Mode enum class call
+    EngineMode mode_ = EngineMode::Editor;
 
+    //Call the Shooter Game Class add a little '_' to show DO NOT TOUCH THIS PLEASE//
+    SplineShooterGame splineGame_;
 
 private:
 
