@@ -39,7 +39,6 @@ void SplineShooterGame::Update(float dt, Scene& scene, Camera& cam)
     speed_ = 2.5f; // just for testing
     auto pts = CollectSplinePoints(scene);
 
-    //Till here remove please
 
     if ((int)pts.size() < 4) return; // need at least 4 for Catmull-Rom
 
