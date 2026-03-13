@@ -6,7 +6,7 @@
 
 #include "../src/Scene.hpp"
 #include "../src/Camera.hpp"
-
+#include <iostream>
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -36,8 +36,11 @@ void SplineShooterGame::Stop()
 void SplineShooterGame::Update(float dt, Scene& scene, Camera& cam)
 {
     if (!running_) return;
-
+    speed_ = 2.5f; // just for testing
     auto pts = CollectSplinePoints(scene);
+
+    //Till here remove please
+
     if ((int)pts.size() < 4) return; // need at least 4 for Catmull-Rom
 
     SceneObject* player = FindByName(scene, "Player");
@@ -47,8 +50,11 @@ void SplineShooterGame::Update(float dt, Scene& scene, Camera& cam)
     seg_t += speed_ * dt;
 
     // clamp to end for MVP (later: win state)
-    float maxT = (float)(pts.size() - 3); // segments count
-    if (seg_t > maxT) seg_t = maxT;
+    float maxT = (float)(pts.size() - 3);
+    if (maxT <= 0.0f) return;
+
+    // loop forever
+    while (seg_t > maxT) seg_t -= maxT;
 
     glm::vec3 pos = SampleCatmullRom(pts, seg_t);
     glm::vec3 fwd = glm::normalize(TangentCatmullRom(pts, seg_t));

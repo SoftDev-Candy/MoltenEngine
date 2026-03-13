@@ -440,7 +440,6 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
         }
     }
 
-
     // ---------------------------
     // Specular (Combo + DragDrop)
     // ---------------------------
@@ -506,8 +505,6 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
             pushMessage(std::make_unique<SetEntityShininessMessage>(obj.entity, s));
         }
     }
-
-
 
             // ---------------------------
             // Transform (Website-style boxes)

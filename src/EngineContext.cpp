@@ -331,8 +331,8 @@ void EngineContext::init()
         -0.5f, 0.5f, -0.5f,0.0f,1.0f,
 
         -0.5f, -0.5f, 0.5f,0.0f,0.0f,
-        0.5f, -0.5f, 0.5f,1.0f,0.0f,
-        0.5f, 0.5f, 0.5f,1.0f,1.0f,
+         0.5f, -0.5f, 0.5f,1.0f,0.0f,
+         0.5f, 0.5f, 0.5f,1.0f,1.0f,
         -0.5f, 0.5f, 0.5f,0.0f,1.0f
 
     };
@@ -417,23 +417,6 @@ void EngineContext::update()
 
     UI::BeginDockspaceAndTopBar();
 
-    //For Controls For the Spline in play mode
-    if (mode_ == EngineMode::Play)
-    {
-        float sx = 0.0f, sy = 0.0f;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) sx -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) sx += 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) sy -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) sy += 1.0f;
-
-        splineGame_.SetInput(sx, sy);
-        splineGame_.Update(deltaTime, scene, camera);
-    }
-    else
-    {
-        CameraControls(camera); // editor free-fly
-    }
-
     ui.Draw(scene, camera, selectedIndex,
 
         //Meshes (read-only queries)
@@ -446,12 +429,30 @@ void EngineContext::update()
 
         //Push message (the only "action" UI can do)
         [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); }
-    );
-
+        );
     // Message vomit : UI asks, Engine does -- Like when thy wife commands you must follow//
     ProcessMessages();
-    ui.SetPerfStats(fpsValue, msValue);
 
+    //For Controls For the Spline in play mode
+    if (mode_ == EngineMode::Play)
+    {
+        float sx = 0.0f, sy = 0.0f;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) sx -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) sx += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) sy -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) sy += 1.0f;
+
+        splineGame_.SetInput(sx, sy);
+        splineGame_.Update(deltaTime, scene, camera);
+        std::cout << "[Engine] mode=PLAY dt=" << deltaTime << "\n";
+    }
+    else
+    {
+        CameraControls(camera); // editor free-fly
+    }
+
+
+    ui.SetPerfStats(fpsValue, msValue);
 
 }
 
