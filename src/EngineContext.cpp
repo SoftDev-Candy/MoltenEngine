@@ -94,7 +94,7 @@ void EngineContext::StartGame()
 void EngineContext::StopGame()
 {
     mode_ = EngineMode::Editor;
-    splineGame_.Stop();
+    splineGame_.Stop(scene);
 }
 
 
