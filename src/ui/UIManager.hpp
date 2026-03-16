@@ -31,7 +31,9 @@ public:
               //THIS IS THE IMPORTANT BIT: UI pushes actions as Messages
               std::function<void(std::unique_ptr<Message>)> pushMessage);
 
-        void SetPerfStats(float fps, float ms) { fps_ = fps; ms_ = ms; }
+    void DrawPlayHUD(std::function<void(std::unique_ptr<Message>)> pushMessage);
+
+    void SetPerfStats(float fps, float ms) { fps_ = fps; ms_ = ms; }
 
     void LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pushMessage);
 

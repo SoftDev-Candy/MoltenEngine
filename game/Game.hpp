@@ -32,38 +32,38 @@ public:
 
     void SetInput(float strafeX, float strafeY) { strafeX_ = strafeX; strafeY_ = strafeY; }
     void Shoot(Scene& scene);
-    void DrawHUD();
+    void DrawHUD(); //Old goblin HUD lives here in case we want score/health chaos later//
 
     bool IsRunning() const { return running_; }
 
 private:
-    // ---- game state ----
+    // ---- Game State ----
     bool running_ = false;
     int  health_ = 3;
     int  score_  = 0;
 
-    // ---- spline motion ----
+    // ---- Spline Motion ----
     float seg_t  = 0.0f;     // spline parameter
     float speed_ = 1.5f;     // segments/sec
     float strafeX_ = 0.0f;
     float strafeY_ = 0.0f;
     float laneHalfWidth_ = 2.0f;
 
-    // camera follow
+    // Camera Follow
     float followDist_   = 4.0f;
     float followHeight_ = 2.0f;
     float lookAhead_    = 2.0f;
 
-    // last basis from spline
+    // Last Basis From Spline
     glm::vec3 fwd_{0,0,-1};
     glm::vec3 right_{1,0,0};
     glm::vec3 up_{0,1,0};
 
-    // ---- assets ----
+    // ---- Assets ---- //Borrowed from the engine vault so the bullets dont render as invisible sadness//
     Mesh*    cubeMesh_   = nullptr;
     Texture* defaultTex_ = nullptr;
 
-    // ---- bullets & obstacles ----
+    // ---- Bullets & Obstacles ----
     struct Bullet
     {
         Entity e;

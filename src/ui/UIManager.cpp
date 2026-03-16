@@ -662,6 +662,42 @@ else
 
 }
 
+void UIManager::DrawPlayHUD(std::function<void(std::unique_ptr<Message>)> pushMessage)
+{
+    ImGuiViewport* vp = ImGui::GetMainViewport();
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoDocking |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+
+    //Tiny goblin HUD that floats on top and refuses to join the docking circus//
+    ImGui::SetNextWindowViewport(vp->ID);
+    ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 12.0f, vp->WorkPos.y + 12.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.35f);
+
+    if (ImGui::Begin("PlayHUD##MoltenEngine", nullptr, flags))
+    {
+        ImGui::TextUnformatted("PLAY MODE");
+
+        if (showPerf_)
+        {
+            ImGui::Separator();
+            ImGui::Text("FPS: %.1f", fps_);
+            ImGui::Text("MS:  %.2f", ms_);
+        }
+
+        if (ImGui::Button("Stop"))
+        {
+            pushMessage(std::make_unique<StopGameMessage>());
+        }
+    }
+    ImGui::End();
+}
+
 void UIManager::LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pushMessage)
 {
     static char scenePath[256] = "../scenes/test.scene.json";

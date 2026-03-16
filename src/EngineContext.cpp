@@ -365,7 +365,7 @@ void EngineContext::init()
     renderer.SetActiveTexture(texture);
     renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
 
-    ObjMeshData imported = LoadOBJ("../assets/models/Cube2.obj", false);
+    ObjMeshData imported = LoadOBJ("../assets/models/d5class.obj", false);
     //Light GIZMO singular call here //
 
 
@@ -412,30 +412,60 @@ void EngineContext::update()
 
     //FPS FrameRate Call here//
     DisplayCalculateFrameRate();
+    ui.SetPerfStats(fpsValue, msValue);
 
-    ui.LoadSaveSceneUI([this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); });
+    auto pushUiMessage = [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); };
+    EngineMode modeAtFrameStart = mode_;
 
-    UI::BeginDockspaceAndTopBar();
+    if (modeAtFrameStart == EngineMode::Editor)
+    {
+        ui.LoadSaveSceneUI(pushUiMessage);
+    }
+    else
+    {
+        ui.DrawPlayHUD(pushUiMessage);
+    }
 
-    ui.Draw(scene, camera, selectedIndex,
-
-        //Meshes (read-only queries)
-        [this](const std::string& key){ return meshmanager.Get(key); },
-        [this](){ return meshmanager.Keys(); },
-
-        //Textures (read-only queries)
-        [this](const std::string& key){ return textureManager.Get(key); },
-        [this](){ return textureManager.Keys(); },
-
-        //Push message (the only "action" UI can do)
-        [this](std::unique_ptr<Message> m){ PushMessage(std::move(m)); }
-        );
-    // Message vomit : UI asks, Engine does -- Like when thy wife commands you must follow//
+    //First flush so Play/Stop slaps the engine this frame and not next Christmas//
     ProcessMessages();
 
-    //For Controls For the Spline in play mode
-    if (mode_ == EngineMode::Play)
+    if (mode_ == EngineMode::Editor)
     {
+        if (modeAtFrameStart == EngineMode::Play)
+        {
+            //Stop was hit so bring the grown-up menu back right now big man//
+            ui.LoadSaveSceneUI(pushUiMessage);
+        }
+
+        UI::BeginDockspaceAndTopBar();
+
+        ui.Draw(scene, camera, selectedIndex,
+
+            //Meshes (read-only queries)
+            [this](const std::string& key){ return meshmanager.Get(key); },
+            [this](){ return meshmanager.Keys(); },
+
+            //Textures (read-only queries)
+            [this](const std::string& key){ return textureManager.Get(key); },
+            [this](){ return textureManager.Keys(); },
+
+            //Push message (the only "action" UI can do)
+            pushUiMessage
+            );
+        //Message vomit round two because the editor windows just yapped a fresh batch//
+        ProcessMessages();
+
+        CameraControls(camera); // editor free-fly
+    }
+    else
+    {
+        if (modeAtFrameStart == EngineMode::Editor)
+        {
+            //We clicked Play this frame so the tiny HUD shows up and the big editor ghosts out//
+            ui.DrawPlayHUD(pushUiMessage);
+        }
+
+        //For Controls For the Spline in play mode
         float sx = 0.0f, sy = 0.0f;
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) sx -= 1.0f;
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) sx += 1.0f;
@@ -446,13 +476,6 @@ void EngineContext::update()
         splineGame_.Update(deltaTime, scene, camera);
         std::cout << "[Engine] mode=PLAY dt=" << deltaTime << "\n";
     }
-    else
-    {
-        CameraControls(camera); // editor free-fly
-    }
-
-
-    ui.SetPerfStats(fpsValue, msValue);
 
 }
 

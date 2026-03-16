@@ -14,6 +14,7 @@
 
 void SplineShooterGame::BindAssets(Mesh* cubeMesh, Texture* defaultTex)
 {
+    //Snag the shiny toys from engine land so gameplay doesnt throw invisible cubes at the player//
     cubeMesh_ = cubeMesh;
     defaultTex_ = defaultTex;
 }
@@ -46,7 +47,7 @@ bool SplineShooterGame::DestroyByEntity(Scene& scene, Entity e)
     return false;
 }
 
-// name format: SplinePoint_0, SplinePoint_1...
+// Name format: SplinePoint_0, SplinePoint_1... because naming things is half the boss fight//
 static bool StartsWith(const std::string& s, const char* prefix)
 {
     return s.rfind(prefix, 0) == 0;
@@ -376,7 +377,7 @@ void SplineShooterGame::Update(float dt, Scene& scene, Camera& cam)
 
 void SplineShooterGame::DrawHUD()
 {
-    // simple overlay
+    //Simple overlay living in the basement like a backup goblin if we want game-only HUD later//
     ImGuiWindowFlags flags =
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoDocking |
