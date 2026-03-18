@@ -87,7 +87,76 @@ void EngineContext::RebindSceneAssetPointers()
 
 void EngineContext::StartGame()
 {
+    if (mode_ == EngineMode::Play)
+    {
+        firstMouse = true;
+        shootKeyWasDown_ = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        splineGame_.BeginRound(scene);
+        return;
+    }
+
+    std::string resolvedPlayerMeshKey = splineGame_.GetPreferredPlayerMeshKey();
+    Mesh* resolvedPlayerMesh = meshmanager.Get(resolvedPlayerMeshKey);
+
+    if (resolvedPlayerMesh == nullptr && meshmanager.Get("d5class") != nullptr)
+    {
+        resolvedPlayerMesh = meshmanager.Get("d5class");
+        resolvedPlayerMeshKey = "d5class";
+    }
+
+    if (resolvedPlayerMesh == nullptr && meshmanager.Get("ImportedOBJ") != nullptr)
+    {
+        resolvedPlayerMesh = meshmanager.Get("ImportedOBJ");
+        resolvedPlayerMeshKey = "ImportedOBJ";
+    }
+
+    if (resolvedPlayerMesh == nullptr)
+    {
+        resolvedPlayerMesh = cubeMesh;
+        resolvedPlayerMeshKey = "Cube";
+    }
+
+    std::string resolvedAsteroidMeshKey = splineGame_.GetPreferredAsteroidMeshKey();
+    Mesh* resolvedAsteroidMesh = meshmanager.Get(resolvedAsteroidMeshKey);
+
+    if (resolvedAsteroidMesh == nullptr && meshmanager.Get("asteroid") != nullptr)
+    {
+        resolvedAsteroidMesh = meshmanager.Get("asteroid");
+        resolvedAsteroidMeshKey = "asteroid";
+    }
+
+    if (resolvedAsteroidMesh == nullptr)
+    {
+        resolvedAsteroidMesh = cubeMesh;
+        resolvedAsteroidMeshKey = "Cube";
+    }
+
+    splineGame_.SetPlayerShipMesh(resolvedPlayerMesh, resolvedPlayerMeshKey);
+    splineGame_.SetAsteroidMesh(resolvedAsteroidMesh, resolvedAsteroidMeshKey);
+    splineGame_.SyncViewAngles(camera.rotation.y, camera.rotation.x);
+
+    if (scene.GetLights().empty())
+    {
+        int sunIndex = scene.AddLight();
+        if (sunIndex >= 0 && sunIndex < (int)scene.GetLights().size())
+        {
+            auto& sunLight = scene.GetLights()[sunIndex];
+            sunLight.position = glm::vec3(6.0f, 7.0f, 3.0f);
+            sunLight.rotation = glm::vec3(-35.0f, -125.0f, 0.0f);
+            sunLight.color = glm::vec3(1.0f, 0.95f, 0.85f);
+            sunLight.intensity = 3.5f;
+            sunLight.ambientStrength = 0.18f;
+        }
+    }
+
     mode_ = EngineMode::Play;
+    firstMouse = true;
+    toggleControlModeKeyWasDown_ = false;
+    startRoundKeyWasDown_ = false;
+    shootKeyWasDown_ = false;
+    stopGameKeyWasDown_ = false;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     splineGame_.Start(scene);
 }
 
@@ -95,6 +164,13 @@ void EngineContext::StopGame()
 {
     mode_ = EngineMode::Editor;
     splineGame_.Stop(scene);
+    mouseLookActive = false;
+    firstMouse = true;
+    toggleControlModeKeyWasDown_ = false;
+    startRoundKeyWasDown_ = false;
+    shootKeyWasDown_ = false;
+    stopGameKeyWasDown_ = false;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 
@@ -364,6 +440,7 @@ void EngineContext::init()
     texture = textureManager.Add("Default", std::make_unique<Texture>("../assets/FlatNormalMap.png"));
     renderer.SetActiveTexture(texture);
     renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
+    splineGame_.BindAssets(cubeMesh, texture); //Feed the game layer its starter pack so Play mode has real toys//
 
     ObjMeshData imported = LoadOBJ("../assets/models/d5class.obj", false);
     //Light GIZMO singular call here //
@@ -423,7 +500,7 @@ void EngineContext::update()
     }
     else
     {
-        ui.DrawPlayHUD(pushUiMessage);
+        ui.DrawPlayHUD(splineGame_, pushUiMessage);
     }
 
     //First flush so Play/Stop slaps the engine this frame and not next Christmas//
@@ -462,17 +539,90 @@ void EngineContext::update()
         if (modeAtFrameStart == EngineMode::Editor)
         {
             //We clicked Play this frame so the tiny HUD shows up and the big editor ghosts out//
-            ui.DrawPlayHUD(pushUiMessage);
+            ui.DrawPlayHUD(splineGame_, pushUiMessage);
         }
 
-        //For Controls For the Spline in play mode
-        float sx = 0.0f, sy = 0.0f;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) sx -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) sx += 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) sy -= 1.0f;
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) sy += 1.0f;
+        int wantedCursorMode =
+            (splineGame_.GetState() == SplineShooterGame::GameState::Playing)
+                ? GLFW_CURSOR_DISABLED
+                : GLFW_CURSOR_NORMAL;
 
-        splineGame_.SetInput(sx, sy);
+        if (glfwGetInputMode(window, GLFW_CURSOR) != wantedCursorMode)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, wantedCursorMode);
+            firstMouse = true;
+        }
+
+        double mouseX = 0.0;
+        double mouseY = 0.0;
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+
+        if (firstMouse)
+        {
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            firstMouse = false;
+        }
+
+        float mouseDeltaX = (float)(mouseX - lastMouseX);
+        float mouseDeltaY = (float)(lastMouseY - mouseY);
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+
+        float horizontalStrafeInput = 0.0f;
+        float verticalStrafeInput = 0.0f;
+        float forwardInput = 0.0f;
+
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) horizontalStrafeInput -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) horizontalStrafeInput += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) verticalStrafeInput -= 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) verticalStrafeInput += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) forwardInput += 1.0f;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) forwardInput -= 1.0f;
+
+        bool startRoundKeyIsDown =
+            glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ||
+            glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
+        if (startRoundKeyIsDown && !startRoundKeyWasDown_)
+        {
+            StartGame();
+        }
+        startRoundKeyWasDown_ = startRoundKeyIsDown;
+
+        bool toggleControlModeKeyIsDown = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
+        if (toggleControlModeKeyIsDown && !toggleControlModeKeyWasDown_ &&
+            splineGame_.GetState() == SplineShooterGame::GameState::Playing)
+        {
+            if (splineGame_.GetControlMode() == SplineShooterGame::ControlMode::SplineFollow)
+            {
+                splineGame_.SyncViewAngles(camera.rotation.y, camera.rotation.x);
+            }
+            splineGame_.ToggleControlMode();
+        }
+        toggleControlModeKeyWasDown_ = toggleControlModeKeyIsDown;
+
+        bool stopGameKeyIsDown = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+        if (stopGameKeyIsDown && !stopGameKeyWasDown_)
+        {
+            StopGame();
+        }
+        stopGameKeyWasDown_ = stopGameKeyIsDown;
+
+        if (mode_ != EngineMode::Play)
+        {
+            return;
+        }
+
+        bool shootKeyIsDown = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+        if (shootKeyIsDown && !shootKeyWasDown_)
+        {
+            splineGame_.Shoot(scene);
+        }
+        shootKeyWasDown_ = shootKeyIsDown;
+
+        splineGame_.SetLookDelta(mouseDeltaX, mouseDeltaY);
+        splineGame_.SetInput(horizontalStrafeInput, verticalStrafeInput);
+        splineGame_.SetMoveForward(forwardInput);
         splineGame_.Update(deltaTime, scene, camera);
         std::cout << "[Engine] mode=PLAY dt=" << deltaTime << "\n";
     }

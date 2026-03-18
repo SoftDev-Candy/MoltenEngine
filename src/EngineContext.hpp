@@ -129,6 +129,10 @@ private:
     bool mouseLookActive = false;
     bool firstMouse = true;
     double lastMouseX = 0.0, lastMouseY = 0.0;
+    bool toggleControlModeKeyWasDown_ = false;
+    bool startRoundKeyWasDown_ = false;
+    bool shootKeyWasDown_ = false;
+    bool stopGameKeyWasDown_ = false;
 
     float mouseSensitivity = 0.12f;   // tweak
     float pitchClamp = 89.0f;

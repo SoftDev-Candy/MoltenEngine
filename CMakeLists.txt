@@ -107,6 +107,8 @@ add_executable(MoltenEngine src/main.cpp
         src/message/StopGameMessage.hpp
         game/Game.cpp
         game/Game.hpp
+        game/GameUI.cpp
+        game/GameUI.hpp
 )
 
 add_executable(SplineShooter

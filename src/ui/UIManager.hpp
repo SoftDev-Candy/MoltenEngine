@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+class SplineShooterGame;
 
 struct Message; // forward declare so UI doesn't drag in message includes everywhere
 
@@ -31,7 +32,7 @@ public:
               //THIS IS THE IMPORTANT BIT: UI pushes actions as Messages
               std::function<void(std::unique_ptr<Message>)> pushMessage);
 
-    void DrawPlayHUD(std::function<void(std::unique_ptr<Message>)> pushMessage);
+    void DrawPlayHUD(const SplineShooterGame& game, std::function<void(std::unique_ptr<Message>)> pushMessage);
 
     void SetPerfStats(float fps, float ms) { fps_ = fps; ms_ = ms; }
 
