@@ -7,8 +7,13 @@
 
 #include "EditorWidgets.hpp"
 #include "../../game/GameUI.hpp"
+#include "imgui.h"
 #include "imgui_impl_opengl3.h"
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstring> // strcpy
+#include <filesystem>
 #include <string>  // std::to_string
 #include <vector>
 #include "../message/CreateEntityMessage.hpp"
@@ -30,6 +35,7 @@
 #include "../message/StartGameMessage.hpp"
 #include "../message/StopGameMessage.hpp"
 
+namespace fs = std::filesystem;
 
 static std::string GetFileStem(const char* path)
 {
@@ -47,11 +53,142 @@ static std::string GetFileStem(const char* path)
     return s;
 }
 
+static void CopyStringToBuffer(const std::string& text, char* buffer, size_t bufferSize)
+{
+    if (bufferSize == 0)
+    {
+        return;
+    }
+
+    std::strncpy(buffer, text.c_str(), bufferSize);
+    buffer[bufferSize - 1] = '\0';
+}
+
+static std::string ToLowerCopy(const std::string& text)
+{
+    std::string lowered = text;
+    std::transform(
+        lowered.begin(),
+        lowered.end(),
+        lowered.begin(),
+        [](unsigned char character)
+        {
+            return (char)std::tolower(character);
+        });
+    return lowered;
+}
+
+static bool ContainsCaseInsensitive(const std::string& haystack, const std::string& needle)
+{
+    if (needle.empty())
+    {
+        return true;
+    }
+
+    return ToLowerCopy(haystack).find(ToLowerCopy(needle)) != std::string::npos;
+}
+
+static bool IsMeshAssetPath(const fs::path& path)
+{
+    return ToLowerCopy(path.extension().string()) == ".obj";
+}
+
+static bool IsTextureAssetPath(const fs::path& path)
+{
+    std::string extension = ToLowerCopy(path.extension().string());
+    return extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
+           extension == ".bmp" || extension == ".tga";
+}
+
+static int CountMeshUsage(Scene& scene, const std::string& meshKey)
+{
+    int usageCount = 0;
+    for (const auto& sceneObject : scene.GetObjects())
+    {
+        if (sceneObject.meshKey == meshKey)
+        {
+            usageCount++;
+        }
+    }
+    return usageCount;
+}
+
+static int CountTextureUsage(Scene& scene, const std::string& textureKey)
+{
+    int usageCount = 0;
+    for (const auto& sceneObject : scene.GetObjects())
+    {
+        if (sceneObject.textureKey == textureKey ||
+            sceneObject.albedoKey == textureKey ||
+            sceneObject.specularKey == textureKey)
+        {
+            usageCount++;
+        }
+    }
+    return usageCount;
+}
+
+static bool PointInRect(const ImVec2& point, const ImVec2& minCorner, const ImVec2& maxCorner)
+{
+    return point.x >= minCorner.x && point.x <= maxCorner.x &&
+           point.y >= minCorner.y && point.y <= maxCorner.y;
+}
+
+static float DistanceToLineSegment(const ImVec2& point, const ImVec2& segmentStart, const ImVec2& segmentEnd)
+{
+    ImVec2 segment = ImVec2(segmentEnd.x - segmentStart.x, segmentEnd.y - segmentStart.y);
+    ImVec2 toPoint = ImVec2(point.x - segmentStart.x, point.y - segmentStart.y);
+
+    float segmentLengthSquared = segment.x * segment.x + segment.y * segment.y;
+    if (segmentLengthSquared <= 0.0001f)
+    {
+        float dx = point.x - segmentStart.x;
+        float dy = point.y - segmentStart.y;
+        return std::sqrt(dx * dx + dy * dy);
+    }
+
+    float t = (toPoint.x * segment.x + toPoint.y * segment.y) / segmentLengthSquared;
+    t = std::clamp(t, 0.0f, 1.0f);
+
+    ImVec2 closestPoint = ImVec2(segmentStart.x + segment.x * t, segmentStart.y + segment.y * t);
+    float dx = point.x - closestPoint.x;
+    float dy = point.y - closestPoint.y;
+    return std::sqrt(dx * dx + dy * dy);
+}
+
+static bool ProjectWorldToScreen(
+    const glm::vec3& worldPosition,
+    const Camera& camera,
+    const ImVec2& displaySize,
+    ImVec2& screenPosition)
+{
+    glm::mat4 projection = camera.GetProjection(displaySize.x, displaySize.y);
+    glm::mat4 view = camera.GetView();
+    glm::vec4 clipPosition = projection * view * glm::vec4(worldPosition, 1.0f);
+
+    if (clipPosition.w <= 0.0001f)
+    {
+        return false;
+    }
+
+    glm::vec3 ndcPosition = glm::vec3(clipPosition) / clipPosition.w;
+    if (ndcPosition.z < -1.2f || ndcPosition.z > 1.2f)
+    {
+        return false;
+    }
+
+    screenPosition.x = (ndcPosition.x * 0.5f + 0.5f) * displaySize.x;
+    screenPosition.y = (1.0f - (ndcPosition.y * 0.5f + 0.5f)) * displaySize.y;
+    return true;
+}
+
 void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                      std::function<Mesh*(const std::string&)> getMeshByKey,
                      std::function<std::vector<std::string>()> listMeshKeys,
+                     std::function<std::string(const std::string&)> getMeshSourcePath,
                      std::function<Texture*(const std::string&)> getTextureByKey,
                      std::function<std::vector<std::string>()> listTextureKeys,
+                     std::function<std::string(const std::string&)> getTextureSourcePath,
                      std::function<void(std::unique_ptr<Message>)> pushMessage)
 {
     ImGui::Begin("Scene Hierarchy");
@@ -114,107 +251,16 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
 
     ImGui::End();
 
-    // ---------------------------
-    // ASSETS WINDOW (Meshes + Textures + Import)
-    //Teacher will love this because its "engine-y"//
-    // ---------------------------
-    ImGui::Begin("Assets");
-
-    //OBJ import (path + key)//
-    static char objPath[256] = "../assets/models/";
-    static char objKey[64]   = "";
-
-    ImGui::TextUnformatted("OBJ Import");
-    ImGui::InputText("##ObjPath", objPath, sizeof(objPath));
-    ImGui::InputText("##ObjKey",  objKey,  sizeof(objKey));
-    ImGui::SameLine();
-    if (ImGui::Button("Import OBJ"))
-    {
-        //If no key typed just use file name//
-        if (objKey[0] == '\0')
-        {
-            std::string stem = GetFileStem(objPath);
-            std::strncpy(objKey, stem.c_str(), sizeof(objKey));
-            objKey[sizeof(objKey) - 1] = '\0';
-        }
-
-        //FIXME: import function belongs to engine not UI, so we call callback//
-        pushMessage(std::make_unique<ImportMeshMessage>(
-            std::string(objKey),
-            std::string(objPath)
-        ));
-    }
-
-    ImGui::Separator();
-
-    //Texture import (path + key)//
-    static char texPath[256] = "../assets/";
-    static char texKey[64]   = "";
-
-    ImGui::TextUnformatted("Texture Import");
-    ImGui::InputText("##TexPath", texPath, sizeof(texPath));
-    ImGui::InputText("##TexKey",  texKey,  sizeof(texKey));
-    ImGui::SameLine();
-    if (ImGui::Button("Import Texture"))
-    {
-        //If no key typed just use file name//
-        if (texKey[0] == '\0')
-        {
-            std::string stem = GetFileStem(texPath);
-            std::strncpy(texKey, stem.c_str(), sizeof(texKey));
-            texKey[sizeof(texKey) - 1] = '\0';
-        }
-
-        pushMessage(std::make_unique<ImportTextureMessage>(
-            std::string(texKey),
-            std::string(texPath)
-        ));
-    }
-
-    ImGui::Separator();
-
-    //Mesh list (drag to Inspector -> Model)//
-    ImGui::TextUnformatted("Meshes (drag onto Model)");
-    {
-        std::vector<std::string> keys = listMeshKeys();
-        for (const std::string& k : keys)
-        {
-            ImGui::Selectable(k.c_str());
-
-            //Drag source//
-            if (ImGui::BeginDragDropSource())
-            {
-                ImGui::SetDragDropPayload("MESH_KEY", k.c_str(), k.size() + 1);
-                ImGui::Text("Mesh: %s", k.c_str());
-                ImGui::EndDragDropSource();
-            }
-        }
-    }
-
-    ImGui::Separator();
-
-    //Texture list (drag to Inspector -> Texture)//
-    ImGui::TextUnformatted("Textures (drag onto Texture)");
-    {
-        std::vector<std::string> keys = listTextureKeys();
-        for (const std::string& k : keys)
-        {
-            ImGui::Selectable(k.c_str());
-
-            //Drag source//
-            if (ImGui::BeginDragDropSource())
-            {
-                ImGui::SetDragDropPayload("TEX_KEY", k.c_str(), k.size() + 1);
-                ImGui::Text("Texture: %s", k.c_str());
-                ImGui::EndDragDropSource();
-            }
-        }
-    }
-
-
-    ImGui::End();
-
-    //TEXTURE END's HERE
+    DrawAssetWindow(
+        scene,
+        selectedIndex,
+        getMeshByKey,
+        listMeshKeys,
+        getMeshSourcePath,
+        getTextureByKey,
+        listTextureKeys,
+        getTextureSourcePath,
+        pushMessage);
 
 
     ImGui::Begin("Camera");
@@ -650,6 +696,12 @@ else
     ImVec2 vpMin  = ImVec2(winPos.x + crMin.x, winPos.y + crMin.y);
     ImVec2 vpMax  = ImVec2(winPos.x + crMax.x, winPos.y + crMax.y);
 
+    viewportMinX_ = vpMin.x;
+    viewportMinY_ = vpMin.y;
+    viewportMaxX_ = vpMax.x;
+    viewportMaxY_ = vpMax.y;
+    viewportHovered_ = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+
     // Draw FPS in top-right of viewport content
     if (showPerf_)
     {
@@ -659,8 +711,625 @@ else
         ImGui::Text("MS:  %.2f", ms_);
     }
 
-    ImGui::End();
+    ImGui::SetCursorScreenPos(ImVec2(vpMin.x + 12.0f, vpMin.y + 10.0f));
+    if (ImGui::SmallButton(showMoveGizmo_ ? "Move Gizmo: ON" : "Move Gizmo: OFF"))
+    {
+        showMoveGizmo_ = !showMoveGizmo_;
+        activeGizmoAxis_ = -1;
+        activeGizmoEntityId_ = 0;
+    }
 
+    ImGui::SetCursorScreenPos(ImVec2(vpMin.x + 12.0f, vpMin.y + 32.0f));
+    ImGui::TextUnformatted("Left drag the colored axis lines on a selected object");
+
+    ImGui::End();
+    DrawViewportGizmo(scene, camera, selectedIndex);
+
+}
+
+void UIManager::DrawAssetWindow(
+    Scene& scene,
+    int selectedIndex,
+    std::function<Mesh*(const std::string&)> getMeshByKey,
+    std::function<std::vector<std::string>()> listMeshKeys,
+    std::function<std::string(const std::string&)> getMeshSourcePath,
+    std::function<Texture*(const std::string&)> getTextureByKey,
+    std::function<std::vector<std::string>()> listTextureKeys,
+    std::function<std::string(const std::string&)> getTextureSourcePath,
+    std::function<void(std::unique_ptr<Message>)> pushMessage)
+{
+    (void)getMeshByKey;
+    (void)getTextureByKey;
+
+    static char objPath[256] = "../assets/models/";
+    static char objKey[64]   = "";
+    static char texPath[256] = "../assets/";
+    static char texKey[64]   = "";
+    static int assetSpawnCounter = 0;
+
+    const bool hasSelection = selectedIndex >= 0 && selectedIndex < (int)scene.GetObjects().size();
+    SceneObject* selectedObject = hasSelection ? &scene.GetObjects()[selectedIndex] : nullptr;
+
+    std::vector<std::string> meshKeys = listMeshKeys();
+    std::vector<std::string> textureKeys = listTextureKeys();
+    std::sort(meshKeys.begin(), meshKeys.end());
+    std::sort(textureKeys.begin(), textureKeys.end());
+
+    auto importMeshFromBuffer = [&]()
+    {
+        if (objKey[0] == '\0')
+        {
+            CopyStringToBuffer(GetFileStem(objPath), objKey, sizeof(objKey));
+        }
+
+        pushMessage(std::make_unique<ImportMeshMessage>(
+            std::string(objKey),
+            std::string(objPath)));
+    };
+
+    auto importTextureFromBuffer = [&]()
+    {
+        if (texKey[0] == '\0')
+        {
+            CopyStringToBuffer(GetFileStem(texPath), texKey, sizeof(texKey));
+        }
+
+        pushMessage(std::make_unique<ImportTextureMessage>(
+            std::string(texKey),
+            std::string(texPath)));
+    };
+
+    ImGui::Begin("Assets");
+
+    ImGui::Text("Loaded: %d meshes | %d textures", (int)meshKeys.size(), (int)textureKeys.size());
+    if (hasSelection)
+    {
+        ImGui::Text("Selected: %s", selectedObject->name.c_str());
+    }
+    else
+    {
+        ImGui::TextDisabled("Selected: nothing right now big dog");
+    }
+
+    if (ImGui::BeginTabBar("##AssetTabs"))
+    {
+        if (ImGui::BeginTabItem("Loaded Assets"))
+        {
+            ImGui::InputTextWithHint(
+                "##AssetSearch",
+                "Search keys or source paths...",
+                assetSearch_,
+                sizeof(assetSearch_));
+            ImGui::Separator();
+
+            if (ImGui::CollapsingHeader("Meshes", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                if (ImGui::BeginTable(
+                    "##LoadedMeshes",
+                    4,
+                    ImGuiTableFlags_Borders |
+                    ImGuiTableFlags_RowBg |
+                    ImGuiTableFlags_Resizable |
+                    ImGuiTableFlags_ScrollY,
+                    ImVec2(0.0f, 200.0f)))
+                {
+                    ImGui::TableSetupColumn("Mesh Key");
+                    ImGui::TableSetupColumn("Used", ImGuiTableColumnFlags_WidthFixed, 44.0f);
+                    ImGui::TableSetupColumn("Source");
+                    ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+                    ImGui::TableHeadersRow();
+
+                    for (const std::string& meshKey : meshKeys)
+                    {
+                        std::string sourcePath = getMeshSourcePath(meshKey);
+                        std::string displaySource = sourcePath.empty() ? "<generated mesh>" : sourcePath;
+
+                        if (!ContainsCaseInsensitive(meshKey, assetSearch_) &&
+                            !ContainsCaseInsensitive(displaySource, assetSearch_))
+                        {
+                            continue;
+                        }
+
+                        ImGui::PushID(meshKey.c_str());
+                        ImGui::TableNextRow();
+
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Selectable(meshKey.c_str());
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("MESH_KEY", meshKey.c_str(), meshKey.size() + 1);
+                            ImGui::Text("Mesh: %s", meshKey.c_str());
+                            ImGui::EndDragDropSource();
+                        }
+
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text("%d", CountMeshUsage(scene, meshKey));
+
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(displaySource.c_str());
+                        if (ImGui::IsItemHovered() && !sourcePath.empty())
+                        {
+                            ImGui::SetTooltip("%s", sourcePath.c_str());
+                        }
+
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::BeginDisabled(!hasSelection);
+                        if (ImGui::SmallButton("Use"))
+                        {
+                            pushMessage(std::make_unique<SetEntityMeshMessage>(selectedObject->entity, meshKey));
+                        }
+                        ImGui::EndDisabled();
+                        ImGui::SameLine();
+                        if (ImGui::SmallButton("+Entity"))
+                        {
+                            pushMessage(std::make_unique<CreateEntityMessage>(
+                                meshKey + "_" + std::to_string(assetSpawnCounter++),
+                                meshKey));
+                        }
+
+                        ImGui::PopID();
+                    }
+
+                    ImGui::EndTable();
+                }
+            }
+
+            if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                if (ImGui::BeginTable(
+                    "##LoadedTextures",
+                    4,
+                    ImGuiTableFlags_Borders |
+                    ImGuiTableFlags_RowBg |
+                    ImGuiTableFlags_Resizable |
+                    ImGuiTableFlags_ScrollY,
+                    ImVec2(0.0f, 200.0f)))
+                {
+                    ImGui::TableSetupColumn("Texture Key");
+                    ImGui::TableSetupColumn("Used", ImGuiTableColumnFlags_WidthFixed, 44.0f);
+                    ImGui::TableSetupColumn("Source");
+                    ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthFixed, 64.0f);
+                    ImGui::TableHeadersRow();
+
+                    for (const std::string& textureKey : textureKeys)
+                    {
+                        std::string sourcePath = getTextureSourcePath(textureKey);
+                        std::string displaySource = sourcePath.empty() ? "<generated texture>" : sourcePath;
+
+                        if (!ContainsCaseInsensitive(textureKey, assetSearch_) &&
+                            !ContainsCaseInsensitive(displaySource, assetSearch_))
+                        {
+                            continue;
+                        }
+
+                        ImGui::PushID(textureKey.c_str());
+                        ImGui::TableNextRow();
+
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::Selectable(textureKey.c_str());
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("TEX_KEY", textureKey.c_str(), textureKey.size() + 1);
+                            ImGui::Text("Texture: %s", textureKey.c_str());
+                            ImGui::EndDragDropSource();
+                        }
+
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::Text("%d", CountTextureUsage(scene, textureKey));
+
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(displaySource.c_str());
+                        if (ImGui::IsItemHovered() && !sourcePath.empty())
+                        {
+                            ImGui::SetTooltip("%s", sourcePath.c_str());
+                        }
+
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::BeginDisabled(!hasSelection);
+                        if (ImGui::SmallButton("Use"))
+                        {
+                            pushMessage(std::make_unique<SetEntityTextureMessage>(selectedObject->entity, textureKey));
+                        }
+                        ImGui::EndDisabled();
+
+                        ImGui::PopID();
+                    }
+
+                    ImGui::EndTable();
+                }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Project Browser"))
+        {
+            ImGui::TextUnformatted("Quick Import");
+            if (ImGui::BeginTable("##QuickImportTable", 2, ImGuiTableFlags_SizingStretchSame))
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted("OBJ Path");
+                ImGui::InputText("##ObjPath", objPath, sizeof(objPath));
+                ImGui::TextUnformatted("OBJ Key");
+                ImGui::InputText("##ObjKey", objKey, sizeof(objKey));
+                if (ImGui::Button("Import OBJ"))
+                {
+                    importMeshFromBuffer();
+                }
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted("Texture Path");
+                ImGui::InputText("##TexPath", texPath, sizeof(texPath));
+                ImGui::TextUnformatted("Texture Key");
+                ImGui::InputText("##TexKey", texKey, sizeof(texKey));
+                if (ImGui::Button("Import Texture"))
+                {
+                    importTextureFromBuffer();
+                }
+
+                ImGui::EndTable();
+            }
+
+            ImGui::Separator();
+            ImGui::InputTextWithHint(
+                "##ProjectAssetSearch",
+                "Search files inside ../assets...",
+                projectAssetSearch_,
+                sizeof(projectAssetSearch_));
+
+            fs::path projectRoot = "../assets";
+            std::vector<fs::path> projectFiles;
+
+            if (fs::exists(projectRoot))
+            {
+                try
+                {
+                    for (const auto& entry : fs::recursive_directory_iterator(
+                        projectRoot,
+                        fs::directory_options::skip_permission_denied))
+                    {
+                        if (!entry.is_regular_file())
+                        {
+                            continue;
+                        }
+
+                        if (!IsMeshAssetPath(entry.path()) && !IsTextureAssetPath(entry.path()))
+                        {
+                            continue;
+                        }
+
+                        projectFiles.push_back(entry.path());
+                    }
+                }
+                catch (const fs::filesystem_error&)
+                {
+                    //If the file browser throws a fit we just skip the drama and keep the editor alive//
+                }
+            }
+
+            std::sort(
+                projectFiles.begin(),
+                projectFiles.end(),
+                [](const fs::path& leftPath, const fs::path& rightPath)
+                {
+                    return leftPath.generic_string() < rightPath.generic_string();
+                });
+
+            if (ImGui::BeginTable(
+                "##ProjectAssetTable",
+                3,
+                ImGuiTableFlags_Borders |
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_ScrollY,
+                ImVec2(0.0f, 300.0f)))
+            {
+                ImGui::TableSetupColumn("File");
+                ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 64.0f);
+                ImGui::TableSetupColumn("Quick Action", ImGuiTableColumnFlags_WidthFixed, 110.0f);
+                ImGui::TableHeadersRow();
+
+                for (const fs::path& assetPath : projectFiles)
+                {
+                    std::string relativePath;
+                    try
+                    {
+                        relativePath = fs::relative(assetPath, projectRoot).generic_string();
+                    }
+                    catch (const fs::filesystem_error&)
+                    {
+                        relativePath = assetPath.generic_string();
+                    }
+
+                    if (!ContainsCaseInsensitive(relativePath, projectAssetSearch_))
+                    {
+                        continue;
+                    }
+
+                    bool isMeshFile = IsMeshAssetPath(assetPath);
+                    bool isTextureFile = IsTextureAssetPath(assetPath);
+                    std::string assetType = isMeshFile ? "Mesh" : "Texture";
+                    std::string fullPath = assetPath.generic_string();
+                    std::string stemKey = assetPath.stem().string();
+
+                    ImGui::PushID(relativePath.c_str());
+                    ImGui::TableNextRow();
+
+                    ImGui::TableSetColumnIndex(0);
+                    bool clicked = ImGui::Selectable(
+                        relativePath.c_str(),
+                        false,
+                        ImGuiSelectableFlags_AllowDoubleClick);
+
+                    if (clicked)
+                    {
+                        if (isMeshFile)
+                        {
+                            CopyStringToBuffer(fullPath, objPath, sizeof(objPath));
+                            CopyStringToBuffer(stemKey, objKey, sizeof(objKey));
+                            if (ImGui::IsMouseDoubleClicked(0))
+                            {
+                                importMeshFromBuffer();
+                            }
+                        }
+                        else if (isTextureFile)
+                        {
+                            CopyStringToBuffer(fullPath, texPath, sizeof(texPath));
+                            CopyStringToBuffer(stemKey, texKey, sizeof(texKey));
+                            if (ImGui::IsMouseDoubleClicked(0))
+                            {
+                                importTextureFromBuffer();
+                            }
+                        }
+                    }
+
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(assetType.c_str());
+
+                    ImGui::TableSetColumnIndex(2);
+                    if (ImGui::SmallButton("Queue"))
+                    {
+                        if (isMeshFile)
+                        {
+                            CopyStringToBuffer(fullPath, objPath, sizeof(objPath));
+                            CopyStringToBuffer(stemKey, objKey, sizeof(objKey));
+                        }
+                        else if (isTextureFile)
+                        {
+                            CopyStringToBuffer(fullPath, texPath, sizeof(texPath));
+                            CopyStringToBuffer(stemKey, texKey, sizeof(texKey));
+                        }
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Import"))
+                    {
+                        if (isMeshFile)
+                        {
+                            CopyStringToBuffer(fullPath, objPath, sizeof(objPath));
+                            CopyStringToBuffer(stemKey, objKey, sizeof(objKey));
+                            importMeshFromBuffer();
+                        }
+                        else if (isTextureFile)
+                        {
+                            CopyStringToBuffer(fullPath, texPath, sizeof(texPath));
+                            CopyStringToBuffer(stemKey, texKey, sizeof(texKey));
+                            importTextureFromBuffer();
+                        }
+                    }
+
+                    ImGui::PopID();
+                }
+
+                ImGui::EndTable();
+            }
+
+            ImGui::TextDisabled("Tip: single click queues the path, double click imports it immediately.");
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+}
+
+void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedIndex)
+{
+    if (!showMoveGizmo_)
+    {
+        activeGizmoAxis_ = -1;
+        activeGizmoEntityId_ = 0;
+        return;
+    }
+
+    if (selectedIndex < 0 || selectedIndex >= (int)scene.GetObjects().size())
+    {
+        if (!ImGui::IsMouseDown(0))
+        {
+            activeGizmoAxis_ = -1;
+            activeGizmoEntityId_ = 0;
+        }
+        return;
+    }
+
+    auto& selectedObject = scene.GetObjects()[selectedIndex];
+    ImVec2 viewportMin(viewportMinX_, viewportMinY_);
+    ImVec2 viewportMax(viewportMaxX_, viewportMaxY_);
+
+    if (viewportMax.x <= viewportMin.x || viewportMax.y <= viewportMin.y)
+    {
+        return;
+    }
+
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    if (displaySize.x <= 0.0f || displaySize.y <= 0.0f)
+    {
+        return;
+    }
+
+    ImVec2 originScreen;
+    if (!ProjectWorldToScreen(selectedObject.transform.position, camera, displaySize, originScreen))
+    {
+        if (!ImGui::IsMouseDown(0))
+        {
+            activeGizmoAxis_ = -1;
+            activeGizmoEntityId_ = 0;
+        }
+        return;
+    }
+
+    if (!PointInRect(originScreen, viewportMin, viewportMax))
+    {
+        if (!ImGui::IsMouseDown(0))
+        {
+            activeGizmoAxis_ = -1;
+            activeGizmoEntityId_ = 0;
+        }
+        return;
+    }
+
+    std::array<glm::vec3, 3> axisDirections =
+    {
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f)
+    };
+
+    std::array<ImU32, 3> axisColors =
+    {
+        IM_COL32(235, 82, 82, 255),
+        IM_COL32(90, 215, 110, 255),
+        IM_COL32(90, 150, 255, 255)
+    };
+
+    std::array<const char*, 3> axisLabels = { "X", "Y", "Z" };
+    std::array<ImVec2, 3> axisEndPoints{};
+    std::array<bool, 3> axisVisible{ false, false, false };
+    std::array<float, 3> axisPixelsPerUnit{ 1.0f, 1.0f, 1.0f };
+    std::array<ImVec2, 3> axisScreenDirections{};
+
+    float cameraDistance = glm::length(camera.position - selectedObject.transform.position);
+    float handleWorldLength = std::clamp(cameraDistance * 0.18f, 0.75f, 3.5f);
+    ImVec2 mousePosition = ImGui::GetMousePos();
+
+    int hoveredAxis = -1;
+    float bestHoverDistance = 9999.0f;
+
+    for (int axisIndex = 0; axisIndex < 3; ++axisIndex)
+    {
+        glm::vec3 worldEndPoint = selectedObject.transform.position + axisDirections[axisIndex] * handleWorldLength;
+        ImVec2 axisEndPoint;
+        if (!ProjectWorldToScreen(worldEndPoint, camera, displaySize, axisEndPoint))
+        {
+            continue;
+        }
+
+        float axisScreenLength = std::sqrt(
+            (axisEndPoint.x - originScreen.x) * (axisEndPoint.x - originScreen.x) +
+            (axisEndPoint.y - originScreen.y) * (axisEndPoint.y - originScreen.y));
+
+        if (axisScreenLength < 18.0f)
+        {
+            continue;
+        }
+
+        axisVisible[axisIndex] = true;
+        axisEndPoints[axisIndex] = axisEndPoint;
+        axisPixelsPerUnit[axisIndex] = axisScreenLength / handleWorldLength;
+        axisScreenDirections[axisIndex] = ImVec2(
+            (axisEndPoint.x - originScreen.x) / axisScreenLength,
+            (axisEndPoint.y - originScreen.y) / axisScreenLength);
+
+        if (!viewportHovered_ || !PointInRect(mousePosition, viewportMin, viewportMax))
+        {
+            continue;
+        }
+
+        float hoverDistance = DistanceToLineSegment(mousePosition, originScreen, axisEndPoint);
+        if (hoverDistance < 10.0f && hoverDistance < bestHoverDistance)
+        {
+            bestHoverDistance = hoverDistance;
+            hoveredAxis = axisIndex;
+        }
+    }
+
+    if (activeGizmoAxis_ != -1 && activeGizmoEntityId_ != selectedObject.entity.Id)
+    {
+        activeGizmoAxis_ = -1;
+        activeGizmoEntityId_ = 0;
+    }
+
+    if (activeGizmoAxis_ == -1 &&
+        hoveredAxis != -1 &&
+        ImGui::IsMouseClicked(0) &&
+        viewportHovered_ &&
+        !ImGui::IsAnyItemActive())
+    {
+        activeGizmoAxis_ = hoveredAxis;
+        activeGizmoEntityId_ = selectedObject.entity.Id;
+        gizmoStartMouseX_ = mousePosition.x;
+        gizmoStartMouseY_ = mousePosition.y;
+        gizmoStartPosition_ = selectedObject.transform.position;
+        gizmoAxisDirection_ = axisDirections[hoveredAxis];
+        gizmoPixelsPerUnit_ = axisPixelsPerUnit[hoveredAxis];
+        gizmoAxisScreenX_ = axisScreenDirections[hoveredAxis].x;
+        gizmoAxisScreenY_ = axisScreenDirections[hoveredAxis].y;
+    }
+
+    if (activeGizmoAxis_ != -1 && activeGizmoEntityId_ == selectedObject.entity.Id)
+    {
+        if (ImGui::IsMouseDown(0))
+        {
+            float mouseDeltaAlongAxis =
+                (mousePosition.x - gizmoStartMouseX_) * gizmoAxisScreenX_ +
+                (mousePosition.y - gizmoStartMouseY_) * gizmoAxisScreenY_;
+
+            float worldUnitsMoved = mouseDeltaAlongAxis / std::max(gizmoPixelsPerUnit_, 1.0f);
+            if (ImGui::GetIO().KeyShift)
+            {
+                //Little snap mode because sometimes precision matters and sometimes the mouse is just being rude//
+                worldUnitsMoved = std::round(worldUnitsMoved * 4.0f) / 4.0f;
+            }
+
+            selectedObject.transform.position = gizmoStartPosition_ + gizmoAxisDirection_ * worldUnitsMoved;
+        }
+        else
+        {
+            activeGizmoAxis_ = -1;
+            activeGizmoEntityId_ = 0;
+        }
+    }
+
+    if (hoveredAxis != -1 || activeGizmoAxis_ != -1)
+    {
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+    }
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+    drawList->AddCircleFilled(originScreen, 5.0f, IM_COL32(245, 245, 245, 220));
+    drawList->AddCircle(originScreen, 7.0f, IM_COL32(20, 20, 20, 230), 0, 2.0f);
+
+    for (int axisIndex = 0; axisIndex < 3; ++axisIndex)
+    {
+        if (!axisVisible[axisIndex])
+        {
+            continue;
+        }
+
+        bool axisIsHot = axisIndex == hoveredAxis || axisIndex == activeGizmoAxis_;
+        float thickness = axisIsHot ? 4.5f : 3.0f;
+        float endRadius = axisIsHot ? 6.5f : 5.0f;
+        ImU32 axisColor = axisColors[axisIndex];
+
+        drawList->AddLine(originScreen, axisEndPoints[axisIndex], axisColor, thickness);
+        drawList->AddCircleFilled(axisEndPoints[axisIndex], endRadius, axisColor);
+        drawList->AddText(
+            ImVec2(axisEndPoints[axisIndex].x + 8.0f, axisEndPoints[axisIndex].y - 8.0f),
+            axisColor,
+            axisLabels[axisIndex]);
+    }
 }
 
 void UIManager::DrawPlayHUD(const SplineShooterGame& game, std::function<void(std::unique_ptr<Message>)> pushMessage)

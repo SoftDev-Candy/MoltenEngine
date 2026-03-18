@@ -521,10 +521,12 @@ void EngineContext::update()
             //Meshes (read-only queries)
             [this](const std::string& key){ return meshmanager.Get(key); },
             [this](){ return meshmanager.Keys(); },
+            [this](const std::string& key){ return meshmanager.GetSourcePath(key); },
 
             //Textures (read-only queries)
             [this](const std::string& key){ return textureManager.Get(key); },
             [this](){ return textureManager.Keys(); },
+            [this](const std::string& key){ return textureManager.GetSourcePath(key); },
 
             //Push message (the only "action" UI can do)
             pushUiMessage

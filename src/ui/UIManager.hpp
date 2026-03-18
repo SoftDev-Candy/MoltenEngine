@@ -26,8 +26,10 @@ public:
               //Read-only queries (UI can inspect assets, not mutate engine directly)
               std::function<Mesh*(const std::string&)> getMeshByKey,
               std::function<std::vector<std::string>()> listMeshKeys,
+              std::function<std::string(const std::string&)> getMeshSourcePath,
               std::function<Texture*(const std::string&)> getTextureByKey,
               std::function<std::vector<std::string>()> listTextureKeys,
+              std::function<std::string(const std::string&)> getTextureSourcePath,
 
               //THIS IS THE IMPORTANT BIT: UI pushes actions as Messages
               std::function<void(std::unique_ptr<Message>)> pushMessage);
@@ -40,9 +42,41 @@ public:
 
 
 private:
+    void DrawAssetWindow(
+        Scene& scene,
+        int selectedIndex,
+        std::function<Mesh*(const std::string&)> getMeshByKey,
+        std::function<std::vector<std::string>()> listMeshKeys,
+        std::function<std::string(const std::string&)> getMeshSourcePath,
+        std::function<Texture*(const std::string&)> getTextureByKey,
+        std::function<std::vector<std::string>()> listTextureKeys,
+        std::function<std::string(const std::string&)> getTextureSourcePath,
+        std::function<void(std::unique_ptr<Message>)> pushMessage);
+    void DrawViewportGizmo(Scene& scene, Camera& camera, int selectedIndex);
+
     bool showPerf_ = true;
+    bool showMoveGizmo_ = true;
     float fps_ = 0.0f;
     float ms_  = 0.0f;
+
+    float viewportMinX_ = 0.0f;
+    float viewportMinY_ = 0.0f;
+    float viewportMaxX_ = 0.0f;
+    float viewportMaxY_ = 0.0f;
+    bool viewportHovered_ = false;
+
+    int activeGizmoAxis_ = -1;
+    EntityID activeGizmoEntityId_ = 0;
+    float gizmoStartMouseX_ = 0.0f;
+    float gizmoStartMouseY_ = 0.0f;
+    float gizmoPixelsPerUnit_ = 1.0f;
+    float gizmoAxisScreenX_ = 1.0f;
+    float gizmoAxisScreenY_ = 0.0f;
+    glm::vec3 gizmoStartPosition_{0.0f, 0.0f, 0.0f};
+    glm::vec3 gizmoAxisDirection_{1.0f, 0.0f, 0.0f};
+
+    char assetSearch_[128] = "";
+    char projectAssetSearch_[128] = "";
 
 };
 
