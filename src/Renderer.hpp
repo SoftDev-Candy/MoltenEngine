@@ -29,6 +29,13 @@ public:
 
     void SetLightGizmoMesh(Mesh* m) { lightGizmoMesh = m; }
     void SetRenderLightWireframe(bool v) { renderLightWireframe = v; }
+    void SetSelectionGizmoMesh(Mesh* m) { selectionGizmoMesh = m; }
+    void SetSelectionGizmoArrowMesh(Mesh* m) { selectionGizmoArrowMesh = m; }
+    void SetSelectionGizmo(const glm::vec3& position, bool visible)
+    {
+        selectionGizmoPosition = position;
+        renderSelectionGizmo = visible;
+    }
 
 
 private:
@@ -44,6 +51,10 @@ private:
     void InitShadowResources();
     Mesh* lightGizmoMesh = nullptr;
     bool renderLightWireframe = false;
+    Mesh* selectionGizmoMesh = nullptr;
+    Mesh* selectionGizmoArrowMesh = nullptr;
+    glm::vec3 selectionGizmoPosition{0.0f, 0.0f, 0.0f};
+    bool renderSelectionGizmo = false;
 
 
 };

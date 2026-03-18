@@ -19,6 +19,8 @@
 #include "ui/EditorWidgets.hpp"
 #include "MemoryDebug.hpp"
 #include "message/SceneSerializer.hpp"
+#include <algorithm>
+#include <cmath>
 
 // Save current editor state
 bool EngineContext::SaveScene(const std::string& path)
@@ -297,6 +299,31 @@ bool EngineContext::ImportObjAsMesh(const std::string& key, const std::string& p
     return true;
 }
 
+static glm::vec3 GetSceneGizmoAnchor(const SceneObject& sceneObject)
+{
+    glm::vec3 halfScale = glm::abs(sceneObject.transform.scale) * 0.5f;
+    glm::vec3 rotationRadians = glm::radians(sceneObject.transform.rotation);
+    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+
+    glm::mat4 rotationMatrix(1.0f);
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.x, glm::vec3(1,0,0));
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.y, glm::vec3(0,1,0));
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.z, glm::vec3(0,0,1));
+
+    glm::vec3 rotatedXAxis = glm::vec3(rotationMatrix * glm::vec4(1,0,0,0));
+    glm::vec3 rotatedYAxis = glm::vec3(rotationMatrix * glm::vec4(0,1,0,0));
+    glm::vec3 rotatedZAxis = glm::vec3(rotationMatrix * glm::vec4(0,0,1,0));
+
+    float topOffset =
+        std::fabs(glm::dot(worldUp, rotatedXAxis)) * halfScale.x +
+        std::fabs(glm::dot(worldUp, rotatedYAxis)) * halfScale.y +
+        std::fabs(glm::dot(worldUp, rotatedZAxis)) * halfScale.z;
+
+    float maxHalfExtent = std::max(halfScale.x, std::max(halfScale.y, halfScale.z));
+    float extraPadding = std::max(0.2f, maxHalfExtent * 0.18f);
+    return sceneObject.transform.position + worldUp * (topOffset + extraPadding);
+}
+
 static void framebuffer_size_callback(GLFWwindow* , int w , int h)
 {
 
@@ -457,6 +484,28 @@ void EngineContext::init()
                         )
         );
     }
+
+    //Give the light its own little direction arrow so we stop guessing where the poor thing is aiming//
+    ObjMeshData lightGizmoImported = LoadOBJ("../assets/models/LightGizmo.obj", false);
+    if (!lightGizmoImported.vertices.empty() && !lightGizmoImported.indices.empty())
+    {
+        meshmanager.Add("LightGizmo",
+                        std::make_unique<Mesh>(
+                            lightGizmoImported.vertices.data(),
+                            lightGizmoImported.vertices.size(),
+                            lightGizmoImported.indices.data(),
+                            lightGizmoImported.indices.size(), 8
+                        )
+        );
+        meshmanager.SetSourcePath("LightGizmo", "../assets/models/LightGizmo.obj");
+        renderer.SetLightGizmoMesh(meshmanager.Get("LightGizmo"));
+        renderer.SetSelectionGizmoArrowMesh(meshmanager.Get("LightGizmo"));
+    }
+    else
+    {
+        renderer.SetSelectionGizmoArrowMesh(meshmanager.Get("Cube"));
+    }
+    renderer.SetSelectionGizmoMesh(meshmanager.Get("Cube"));
 
     lastTime = glfwGetTime();
 
@@ -633,6 +682,19 @@ void EngineContext::update()
 
 void EngineContext::Render()
 {
+    bool renderSceneGizmo =
+        mode_ == EngineMode::Editor &&
+        selectedIndex >= 0 &&
+        selectedIndex < (int)scene.GetObjects().size();
+
+    if (renderSceneGizmo)
+    {
+        renderer.SetSelectionGizmo(GetSceneGizmoAnchor(scene.GetObjects()[selectedIndex]), true);
+    }
+    else
+    {
+        renderer.SetSelectionGizmo(glm::vec3(0.0f), false);
+    }
 
     renderer.Begin();
     renderer.RenderScene(scene ,camera);

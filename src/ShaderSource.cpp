@@ -74,6 +74,8 @@ uniform sampler2D uSpecularMap;
 // shadow map
 uniform sampler2D uShadowMap;
 uniform bool  uShadowsEnabled;
+uniform bool  uUseTintColor;
+uniform vec3  uTintColor;
 
 uniform vec3 uViewPos;
 
@@ -118,6 +120,12 @@ float ShadowFactor(vec4 lightSpacePos, vec3 N, vec3 L)
 
 void main()
 {
+    if (uUseTintColor)
+    {
+        FragColor = vec4(uTintColor, 1.0);
+        return;
+    }
+
     vec3 albedo = texture(uAlbedoMap, vUV).rgb;
     float specMask = texture(uSpecularMap, vUV).r;
 

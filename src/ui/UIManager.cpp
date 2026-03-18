@@ -159,10 +159,15 @@ static float DistanceToLineSegment(const ImVec2& point, const ImVec2& segmentSta
 static bool ProjectWorldToScreen(
     const glm::vec3& worldPosition,
     const Camera& camera,
-    const ImVec2& displaySize,
+    const ImVec2& screenSize,
     ImVec2& screenPosition)
 {
-    glm::mat4 projection = camera.GetProjection(displaySize.x, displaySize.y);
+    if (screenSize.x <= 1.0f || screenSize.y <= 1.0f)
+    {
+        return false;
+    }
+
+    glm::mat4 projection = camera.GetProjection(screenSize.x, screenSize.y);
     glm::mat4 view = camera.GetView();
     glm::vec4 clipPosition = projection * view * glm::vec4(worldPosition, 1.0f);
 
@@ -177,9 +182,35 @@ static bool ProjectWorldToScreen(
         return false;
     }
 
-    screenPosition.x = (ndcPosition.x * 0.5f + 0.5f) * displaySize.x;
-    screenPosition.y = (1.0f - (ndcPosition.y * 0.5f + 0.5f)) * displaySize.y;
+    screenPosition.x = (ndcPosition.x * 0.5f + 0.5f) * screenSize.x;
+    screenPosition.y = (1.0f - (ndcPosition.y * 0.5f + 0.5f)) * screenSize.y;
     return true;
+}
+
+static glm::vec3 GetSceneGizmoAnchor(const SceneObject& sceneObject)
+{
+    glm::vec3 halfScale = glm::abs(sceneObject.transform.scale) * 0.5f;
+    glm::vec3 rotationRadians = glm::radians(sceneObject.transform.rotation);
+    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+
+    glm::mat4 rotationMatrix(1.0f);
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.x, glm::vec3(1,0,0));
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.y, glm::vec3(0,1,0));
+    rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.z, glm::vec3(0,0,1));
+
+    glm::vec3 rotatedXAxis = glm::vec3(rotationMatrix * glm::vec4(1,0,0,0));
+    glm::vec3 rotatedYAxis = glm::vec3(rotationMatrix * glm::vec4(0,1,0,0));
+    glm::vec3 rotatedZAxis = glm::vec3(rotationMatrix * glm::vec4(0,0,1,0));
+
+    //We fake a cheap support-point here so the gizmo chills above the object instead of in its ribcage//
+    float topOffset =
+        std::fabs(glm::dot(worldUp, rotatedXAxis)) * halfScale.x +
+        std::fabs(glm::dot(worldUp, rotatedYAxis)) * halfScale.y +
+        std::fabs(glm::dot(worldUp, rotatedZAxis)) * halfScale.z;
+
+    float maxHalfExtent = std::max(halfScale.x, std::max(halfScale.y, halfScale.z));
+    float extraPadding = std::max(0.2f, maxHalfExtent * 0.18f);
+    return sceneObject.transform.position + worldUp * (topOffset + extraPadding);
 }
 
 void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
@@ -700,7 +731,7 @@ else
     viewportMinY_ = vpMin.y;
     viewportMaxX_ = vpMax.x;
     viewportMaxY_ = vpMax.y;
-    viewportHovered_ = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+    viewportHovered_ = PointInRect(ImGui::GetMousePos(), vpMin, vpMax);
 
     // Draw FPS in top-right of viewport content
     if (showPerf_)
@@ -720,7 +751,7 @@ else
     }
 
     ImGui::SetCursorScreenPos(ImVec2(vpMin.x + 12.0f, vpMin.y + 32.0f));
-    ImGui::TextUnformatted("Left drag the colored axis lines on a selected object");
+    ImGui::TextUnformatted("Left drag the colored axis arrows on a selected object");
 
     ImGui::End();
     DrawViewportGizmo(scene, camera, selectedIndex);
@@ -1155,22 +1186,18 @@ void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedInde
     }
 
     auto& selectedObject = scene.GetObjects()[selectedIndex];
+    glm::vec3 gizmoAnchorWorld = GetSceneGizmoAnchor(selectedObject);
     ImVec2 viewportMin(viewportMinX_, viewportMinY_);
     ImVec2 viewportMax(viewportMaxX_, viewportMaxY_);
+    ImVec2 screenSize = ImGui::GetIO().DisplaySize;
 
     if (viewportMax.x <= viewportMin.x || viewportMax.y <= viewportMin.y)
     {
         return;
     }
 
-    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-    if (displaySize.x <= 0.0f || displaySize.y <= 0.0f)
-    {
-        return;
-    }
-
     ImVec2 originScreen;
-    if (!ProjectWorldToScreen(selectedObject.transform.position, camera, displaySize, originScreen))
+    if (!ProjectWorldToScreen(gizmoAnchorWorld, camera, screenSize, originScreen))
     {
         if (!ImGui::IsMouseDown(0))
         {
@@ -1197,21 +1224,13 @@ void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedInde
         glm::vec3(0.0f, 0.0f, 1.0f)
     };
 
-    std::array<ImU32, 3> axisColors =
-    {
-        IM_COL32(235, 82, 82, 255),
-        IM_COL32(90, 215, 110, 255),
-        IM_COL32(90, 150, 255, 255)
-    };
-
-    std::array<const char*, 3> axisLabels = { "X", "Y", "Z" };
     std::array<ImVec2, 3> axisEndPoints{};
     std::array<bool, 3> axisVisible{ false, false, false };
     std::array<float, 3> axisPixelsPerUnit{ 1.0f, 1.0f, 1.0f };
     std::array<ImVec2, 3> axisScreenDirections{};
 
-    float cameraDistance = glm::length(camera.position - selectedObject.transform.position);
-    float handleWorldLength = std::clamp(cameraDistance * 0.18f, 0.75f, 3.5f);
+    float cameraDistance = glm::length(camera.position - gizmoAnchorWorld);
+    float handleWorldLength = std::clamp(cameraDistance * 0.07f, 0.30f, 1.20f);
     ImVec2 mousePosition = ImGui::GetMousePos();
 
     int hoveredAxis = -1;
@@ -1219,9 +1238,9 @@ void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedInde
 
     for (int axisIndex = 0; axisIndex < 3; ++axisIndex)
     {
-        glm::vec3 worldEndPoint = selectedObject.transform.position + axisDirections[axisIndex] * handleWorldLength;
+        glm::vec3 worldEndPoint = gizmoAnchorWorld + axisDirections[axisIndex] * handleWorldLength;
         ImVec2 axisEndPoint;
-        if (!ProjectWorldToScreen(worldEndPoint, camera, displaySize, axisEndPoint))
+        if (!ProjectWorldToScreen(worldEndPoint, camera, screenSize, axisEndPoint))
         {
             continue;
         }
@@ -1248,9 +1267,14 @@ void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedInde
         }
 
         float hoverDistance = DistanceToLineSegment(mousePosition, originScreen, axisEndPoint);
-        if (hoverDistance < 10.0f && hoverDistance < bestHoverDistance)
+        float tipDistance = std::sqrt(
+            (mousePosition.x - axisEndPoint.x) * (mousePosition.x - axisEndPoint.x) +
+            (mousePosition.y - axisEndPoint.y) * (mousePosition.y - axisEndPoint.y));
+        float pickDistance = std::min(hoverDistance, tipDistance);
+
+        if (pickDistance < 24.0f && pickDistance < bestHoverDistance)
         {
-            bestHoverDistance = hoverDistance;
+            bestHoverDistance = pickDistance;
             hoveredAxis = axisIndex;
         }
     }
@@ -1264,8 +1288,7 @@ void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedInde
     if (activeGizmoAxis_ == -1 &&
         hoveredAxis != -1 &&
         ImGui::IsMouseClicked(0) &&
-        viewportHovered_ &&
-        !ImGui::IsAnyItemActive())
+        viewportHovered_)
     {
         activeGizmoAxis_ = hoveredAxis;
         activeGizmoEntityId_ = selectedObject.entity.Id;
@@ -1305,30 +1328,6 @@ void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedInde
     if (hoveredAxis != -1 || activeGizmoAxis_ != -1)
     {
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-    }
-
-    ImDrawList* drawList = ImGui::GetForegroundDrawList();
-    drawList->AddCircleFilled(originScreen, 5.0f, IM_COL32(245, 245, 245, 220));
-    drawList->AddCircle(originScreen, 7.0f, IM_COL32(20, 20, 20, 230), 0, 2.0f);
-
-    for (int axisIndex = 0; axisIndex < 3; ++axisIndex)
-    {
-        if (!axisVisible[axisIndex])
-        {
-            continue;
-        }
-
-        bool axisIsHot = axisIndex == hoveredAxis || axisIndex == activeGizmoAxis_;
-        float thickness = axisIsHot ? 4.5f : 3.0f;
-        float endRadius = axisIsHot ? 6.5f : 5.0f;
-        ImU32 axisColor = axisColors[axisIndex];
-
-        drawList->AddLine(originScreen, axisEndPoints[axisIndex], axisColor, thickness);
-        drawList->AddCircleFilled(axisEndPoints[axisIndex], endRadius, axisColor);
-        drawList->AddText(
-            ImVec2(axisEndPoints[axisIndex].x + 8.0f, axisEndPoints[axisIndex].y - 8.0f),
-            axisColor,
-            axisLabels[axisIndex]);
     }
 }
 
