@@ -22,6 +22,21 @@
 #include <algorithm>
 #include <cmath>
 
+static bool TextureKeyIsUsable(const std::string& textureKey)
+{
+    return !textureKey.empty() && textureKey != "None";
+}
+
+static bool ShouldMirrorTextureIntoAlbedo(const SceneObject& sceneObject)
+{
+    //If albedo is empty or still wearing the lazy default shirt, use the normal texture slot as the visible skin//
+    return sceneObject.texture != nullptr &&
+           TextureKeyIsUsable(sceneObject.textureKey) &&
+           (sceneObject.albedo == nullptr ||
+            sceneObject.albedoKey == "None" ||
+            (sceneObject.albedoKey == "Default" && sceneObject.textureKey != "Default"));
+}
+
 // Save current editor state
 bool EngineContext::SaveScene(const std::string& path)
 {
@@ -66,6 +81,11 @@ void EngineContext::ResolveSceneAfterLoad()
         o.specular  = textureManager.Get(o.specularKey);
 
         // reasonable fallbacks so you see *something*
+        if (ShouldMirrorTextureIntoAlbedo(o))
+        {
+            o.albedo = o.texture;
+            o.albedoKey = o.textureKey;
+        }
         if (!o.albedo)   o.albedo   = o.texture;
         if (!o.specular) o.specular = o.albedo;
     }
@@ -84,6 +104,16 @@ void EngineContext::RebindSceneAssetPointers()
         o.texture  = textureManager.Get(o.textureKey);
         o.albedo   = textureManager.Get(o.albedoKey);
         o.specular = textureManager.Get(o.specularKey);
+
+        if (ShouldMirrorTextureIntoAlbedo(o))
+        {
+            o.albedo = o.texture;
+            o.albedoKey = o.textureKey;
+        }
+        if (!o.specular)
+        {
+            o.specular = o.albedo;
+        }
     }
 }
 
@@ -216,8 +246,19 @@ void EngineContext::SetEntityTexture(Entity e, const std::string& textureKey)
     {
         if (obj.entity.Id == e.Id)
         {
+            bool mirrorTextureIntoAlbedo =
+                obj.albedo == nullptr ||
+                obj.albedoKey == "None" ||
+                obj.albedoKey == "Default";
+
             obj.texture = t;
             obj.textureKey = textureKey;
+
+            if (mirrorTextureIntoAlbedo)
+            {
+                obj.albedo = t;
+                obj.albedoKey = textureKey;
+            }
             return;
         }
     }

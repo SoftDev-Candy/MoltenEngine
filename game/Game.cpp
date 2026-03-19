@@ -15,6 +15,21 @@ static bool StartsWithPrefix(const std::string& text, const char* prefix)
     return text.rfind(prefix, 0) == 0;
 }
 
+static bool TextureSlotHasRealKey(const std::string& textureKey)
+{
+    return !textureKey.empty() && textureKey != "None";
+}
+
+static bool ShouldBorrowTextureForAlbedo(const SceneObject& sceneObject)
+{
+    //If albedo was never picked properly, let the regular texture slot do the heavy lifting instead of pretending it doesnt exist//
+    return sceneObject.texture != nullptr &&
+           TextureSlotHasRealKey(sceneObject.textureKey) &&
+           (sceneObject.albedo == nullptr ||
+            sceneObject.albedoKey == "None" ||
+            (sceneObject.albedoKey == "Default" && sceneObject.textureKey != "Default"));
+}
+
 static int ParseTrailingInteger(const std::string& text)
 {
     int characterIndex = (int)text.size() - 1;
@@ -203,6 +218,8 @@ void SplineShooterGame::ClearRuntimeObjects(Scene& scene)
 SceneObject* SplineShooterGame::EnsurePlayerObject(Scene& scene)
 {
     SceneObject* playerObject = FindObjectByEntity(scene, playerEntity_);
+    bool createdFreshPlayerObject = false;
+
     if (!playerObject)
     {
         playerObject = FindObjectByName(scene, "Player");
@@ -212,6 +229,7 @@ SceneObject* SplineShooterGame::EnsurePlayerObject(Scene& scene)
     {
         scene.CreateObject();
         playerObject = &scene.GetObjects().back();
+        createdFreshPlayerObject = true;
     }
 
     if (!playerObject)
@@ -226,12 +244,35 @@ SceneObject* SplineShooterGame::EnsurePlayerObject(Scene& scene)
     playerObject->mesh.mesh = resolvedPlayerMesh;
     playerObject->meshKey = resolvedPlayerMeshKey;
 
-    playerObject->texture = defaultTexture_;
-    playerObject->textureKey = "Default";
-    playerObject->albedo = defaultTexture_;
-    playerObject->albedoKey = "Default";
-    playerObject->specular = defaultTexture_;
-    playerObject->specularKey = "Default";
+    if (playerObject->texture == nullptr || !TextureSlotHasRealKey(playerObject->textureKey))
+    {
+        playerObject->texture = defaultTexture_;
+        playerObject->textureKey = defaultTexture_ ? "Default" : "None";
+    }
+
+    if (createdFreshPlayerObject)
+    {
+        //Fresh player gets the boring starter material until you dress it up in the editor//
+        playerObject->albedo = playerObject->texture;
+        playerObject->albedoKey = playerObject->textureKey;
+        playerObject->specular = playerObject->texture;
+        playerObject->specularKey = playerObject->textureKey;
+    }
+    else
+    {
+        if (ShouldBorrowTextureForAlbedo(*playerObject))
+        {
+            playerObject->albedo = playerObject->texture;
+            playerObject->albedoKey = playerObject->textureKey;
+        }
+
+        if (playerObject->specular == nullptr || playerObject->specularKey == "None")
+        {
+            playerObject->specular = playerObject->albedo ? playerObject->albedo : defaultTexture_;
+            playerObject->specularKey = playerObject->albedo ? playerObject->albedoKey : "Default";
+        }
+    }
+
     playerObject->shininess = 64.0f;
     playerObject->transform.scale = glm::vec3(0.35f);
 

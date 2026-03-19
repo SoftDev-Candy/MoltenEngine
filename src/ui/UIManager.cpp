@@ -444,8 +444,20 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                         Texture* t = getTextureByKey(keys[currentIndex]);
                         if (t != nullptr)
                         {
+                            bool mirrorTextureIntoAlbedo =
+                                obj.albedo == nullptr ||
+                                obj.albedoKey == "None" ||
+                                obj.albedoKey == "Default";
+
                             obj.texture = t;
                             obj.textureKey = keys[currentIndex];
+
+                            if (mirrorTextureIntoAlbedo)
+                            {
+                                //If albedo was still on autopilot, keep the main texture slot and visible skin in sync//
+                                obj.albedo = t;
+                                obj.albedoKey = keys[currentIndex];
+                            }
                         }
                     }
                 }
@@ -463,8 +475,19 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                         Texture* t = getTextureByKey(droppedKey);
                         if (t != nullptr)
                         {
+                            bool mirrorTextureIntoAlbedo =
+                                obj.albedo == nullptr ||
+                                obj.albedoKey == "None" ||
+                                obj.albedoKey == "Default";
+
                             obj.texture = t;
                             obj.textureKey = droppedKey;
+
+                            if (mirrorTextureIntoAlbedo)
+                            {
+                                obj.albedo = t;
+                                obj.albedoKey = droppedKey;
+                            }
                         }
                     }
                     ImGui::EndDragDropTarget();
