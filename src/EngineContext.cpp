@@ -37,6 +37,21 @@ static bool ShouldMirrorTextureIntoAlbedo(const SceneObject& sceneObject)
             (sceneObject.albedoKey == "Default" && sceneObject.textureKey != "Default"));
 }
 
+static float WrapAngleDegreesSigned(float angleDegrees)
+{
+    float wrappedAngle = std::fmod(angleDegrees, 360.0f);
+    if (wrappedAngle > 180.0f)
+    {
+        wrappedAngle -= 360.0f;
+    }
+    else if (wrappedAngle < -180.0f)
+    {
+        wrappedAngle += 360.0f;
+    }
+
+    return wrappedAngle;
+}
+
 // Save current editor state
 bool EngineContext::SaveScene(const std::string& path)
 {
@@ -497,6 +512,7 @@ void EngineContext::init()
     );
 
     renderer.SetLightGizmoMesh(meshmanager.Get("Cube"));
+    renderer.SetEmptyObjectHelperMesh(meshmanager.Get("Cube"));
     Mesh* dbg = meshmanager.Get("Cube");
     std::cout << "[Debug] Cube mesh ptr = " << dbg << "\n";
     renderer.SetLightGizmoMesh(dbg);
@@ -725,6 +741,7 @@ void EngineContext::Render()
 {
     //Old scene gizmo circus stays switched off now that ImGuizmo handles the editor handles for real//
     renderer.SetSelectionGizmo(glm::vec3(0.0f), false);
+    renderer.SetRenderEmptyObjectHelpers(mode_ == EngineMode::Editor);
 
     renderer.Begin();
     renderer.RenderScene(scene ,camera);
@@ -898,7 +915,10 @@ void EngineContext::CameraControls(Camera& camera)
 
         if (camera.rotation.x > pitchClamp) camera.rotation.x = pitchClamp;
         if (camera.rotation.x < -pitchClamp) camera.rotation.x = -pitchClamp;
+        camera.rotation.y = WrapAngleDegreesSigned(camera.rotation.y);
     }
+
+    camera.rotation.z = WrapAngleDegreesSigned(camera.rotation.z);
 
     // --- movement next (below) ---
 

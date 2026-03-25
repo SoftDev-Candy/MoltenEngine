@@ -182,6 +182,47 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
         glDrawElements(GL_TRIANGLES, sceneObject.mesh.mesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
     }
 
+    if (renderEmptyObjectHelpers && emptyObjectHelperMesh != nullptr)
+    {
+        //Empty object helper cubes so invisible scene ghosts stop pretending they are a valid workflow//
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glLineWidth(3.0f);
+
+        shaderptr->bind();
+        ApplySharedSceneUniforms();
+        shaderptr->setInt("uUseTintColor", 1);
+        shaderptr->setFloat("uShininess", 6.0f);
+        shaderptr->setFloat("uSpecStrength", 0.0f);
+        BindMaterialTextures(defaultTexture, defaultTexture);
+
+        for (const auto& sceneObject : scene.GetObjects())
+        {
+            if (sceneObject.mesh.mesh != nullptr || sceneObject.meshKey != "None")
+            {
+                continue;
+            }
+
+            glm::vec3 helperTint =
+                (sceneObject.name.rfind("SplinePoint_", 0) == 0)
+                    ? glm::vec3(1.00f, 0.66f, 0.24f)
+                    : glm::vec3(0.42f, 0.84f, 1.00f);
+
+            glm::mat4 helperModel = sceneObject.transform.GetMatrix();
+            glm::mat4 helperMvp = projection * view * helperModel;
+
+            shaderptr->setMat4("uModel", helperModel);
+            shaderptr->setMat4("MVP", helperMvp);
+            shaderptr->setVec3("uTintColor", helperTint);
+
+            emptyObjectHelperMesh->Bind();
+            glDrawElements(GL_TRIANGLES, emptyObjectHelperMesh->GetIndexCount(), GL_UNSIGNED_INT, 0);
+        }
+
+        shaderptr->setInt("uUseTintColor", 0);
+        glLineWidth(1.0f);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
     if (lightGizmoMesh != nullptr)
     {
         if (renderLightWireframe)

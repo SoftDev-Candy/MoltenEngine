@@ -649,13 +649,24 @@ void SplineShooterGame::UpdateSplineFollow(float deltaTime, SceneObject& playerO
 
     playerObject.transform.position = playerPosition;
 
-    glm::vec3 cameraPosition = playerPosition - forwardDirection * followDistance_ + worldUp * followHeight_;
-    glm::vec3 cameraTarget = playerPosition + forwardDirection * lookAheadDistance_;
-    glm::vec3 cameraLookDirection = SafeNormalize(cameraTarget - cameraPosition, forwardDirection);
+    //Flatten the chase camera so spline hills dont keep grabbing the poor thing by the face//
+    glm::vec3 flattenedForwardDirection =
+        SafeNormalize(glm::vec3(forwardDirection.x, 0.0f, forwardDirection.z), glm::vec3(0.0f, 0.0f, -1.0f));
+    glm::vec3 flattenedRightDirection =
+        SafeNormalize(glm::cross(flattenedForwardDirection, worldUp), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    const float cameraLanePeekAmount = 0.85f; //Tiny left-right lean so strafing feels alive without the camera doing parkour//
+    const float fixedSplineCameraPitch = -6.0f; //Straight-ish view that still lets you see the ship instead of just staring at space tax//
+
+    glm::vec3 cameraPosition =
+        playerPosition -
+        flattenedForwardDirection * followDistance_ +
+        worldUp * followHeight_ +
+        flattenedRightDirection * (horizontalStrafe * cameraLanePeekAmount);
 
     camera.position = cameraPosition;
-    camera.rotation.y = glm::degrees(std::atan2(cameraLookDirection.z, cameraLookDirection.x));
-    camera.rotation.x = glm::degrees(std::asin(cameraLookDirection.y));
+    camera.rotation.y = glm::degrees(std::atan2(flattenedForwardDirection.z, flattenedForwardDirection.x));
+    camera.rotation.x = fixedSplineCameraPitch;
 }
 
 void SplineShooterGame::UpdateBullets(float deltaTime, Scene& scene)

@@ -13,6 +13,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstdio>
 #include <cmath>
 #include <cstring> // strcpy
@@ -103,6 +104,43 @@ static bool IsTextureAssetPath(const fs::path& path)
            extension == ".bmp" || extension == ".tga";
 }
 
+static int ParseTrailingInteger(const std::string& text)
+{
+    int characterIndex = (int)text.size() - 1;
+    while (characterIndex >= 0 && std::isdigit((unsigned char)text[characterIndex]))
+    {
+        characterIndex--;
+    }
+
+    if (characterIndex == (int)text.size() - 1)
+    {
+        return -1;
+    }
+
+    return std::stoi(text.substr(characterIndex + 1));
+}
+
+static int FindNextSplinePointIndex(Scene& scene)
+{
+    int nextSplinePointIndex = 0;
+
+    for (const auto& sceneObject : scene.GetObjects())
+    {
+        if (sceneObject.name.rfind("SplinePoint_", 0) != 0)
+        {
+            continue;
+        }
+
+        int pointIndex = ParseTrailingInteger(sceneObject.name);
+        if (pointIndex >= nextSplinePointIndex)
+        {
+            nextSplinePointIndex = pointIndex + 1;
+        }
+    }
+
+    return nextSplinePointIndex;
+}
+
 static int CountMeshUsage(Scene& scene, const std::string& meshKey)
 {
     int usageCount = 0;
@@ -190,6 +228,21 @@ static bool ProjectWorldToScreen(
     return true;
 }
 
+static float WrapAngleDegreesSigned(float angleDegrees)
+{
+    float wrappedAngle = std::fmod(angleDegrees, 360.0f);
+    if (wrappedAngle > 180.0f)
+    {
+        wrappedAngle -= 360.0f;
+    }
+    else if (wrappedAngle < -180.0f)
+    {
+        wrappedAngle += 360.0f;
+    }
+
+    return wrappedAngle;
+}
+
 static glm::vec3 GetSceneGizmoAnchor(const SceneObject& sceneObject)
 {
     glm::vec3 halfScale = glm::abs(sceneObject.transform.scale) * 0.5f;
@@ -244,6 +297,17 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
     {
         pushMessage(std::make_unique<CreateEntityMessage>(
             "Empty_" + std::to_string(emptyCounter++),
+            "None"
+        ));
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("+ Add Spline Point"))
+    {
+        int nextSplinePointIndex = FindNextSplinePointIndex(scene);
+        pushMessage(std::make_unique<CreateEntityMessage>(
+            "SplinePoint_" + std::to_string(nextSplinePointIndex),
             "None"
         ));
     }
@@ -311,9 +375,11 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
     //Pitch clamp is optional but recommended so it doesn't flip
     ImGui::DragFloat3("Rotation", &camera.rotation.x, 0.10f);
 
-    //Optional clamps so camera doesn't go insane
+    //Optional clamps so camera doesn't go insane and start counting to space//
     if (camera.rotation.x > 89.0f) camera.rotation.x = 89.0f;
     if (camera.rotation.x < -89.0f) camera.rotation.x = -89.0f;
+    camera.rotation.y = WrapAngleDegreesSigned(camera.rotation.y);
+    camera.rotation.z = WrapAngleDegreesSigned(camera.rotation.z);
 
     ImGui::End();
 
