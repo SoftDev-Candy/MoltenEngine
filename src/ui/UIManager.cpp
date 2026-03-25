@@ -7,10 +7,13 @@
 
 #include "EditorWidgets.hpp"
 #include "../../game/GameUI.hpp"
+#include "ImGuizmo.h"
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
+#include "glm/gtc/type_ptr.hpp"
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cmath>
 #include <cstring> // strcpy
 #include <filesystem>
@@ -226,7 +229,7 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
     //
     //Quick Add buttons
     static int cubeCounter = 0;
-    static int importedCounter = 0;
+    static int emptyCounter = 0;
     if (ImGui::Button("+ Add Cube"))
     {
         pushMessage(std::make_unique<CreateEntityMessage>(
@@ -237,11 +240,11 @@ void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
 
     ImGui::SameLine();
 
-    if (ImGui::Button("+ Add Imported"))
+    if (ImGui::Button("+ Add Empty"))
     {
         pushMessage(std::make_unique<CreateEntityMessage>(
-            "Imported_" + std::to_string(importedCounter++),
-            "ImportedOBJ"
+            "Empty_" + std::to_string(emptyCounter++),
+            "None"
         ));
     }
 
@@ -735,48 +738,56 @@ else
         pushMessage(std::make_unique<SetShadowsEnabledMessage>(shadows));
 
     ImGui::Checkbox("Show FPS", &showPerf_);
-
-    ImGui::End();
-
-    ImGui::Begin("Viewport", nullptr,
-        ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoScrollWithMouse |
+    ImGui::Separator();
+    ImGui::TextUnformatted("Scene Gizmo");
+    /*
         ImGuiWindowFlags_NoBackground); // important: don’t hide the OpenGL scene
 
-    // Get viewport content rect in SCREEN space
-    ImVec2 winPos = ImGui::GetWindowPos();
-    ImVec2 crMin  = ImGui::GetWindowContentRegionMin();
-    ImVec2 crMax  = ImGui::GetWindowContentRegionMax();
-    ImVec2 vpMin  = ImVec2(winPos.x + crMin.x, winPos.y + crMin.y);
-    ImVec2 vpMax  = ImVec2(winPos.x + crMax.x, winPos.y + crMax.y);
-
-    viewportMinX_ = vpMin.x;
-    viewportMinY_ = vpMin.y;
-    viewportMaxX_ = vpMax.x;
-    viewportMaxY_ = vpMax.y;
-    viewportHovered_ = PointInRect(ImGui::GetMousePos(), vpMin, vpMax);
-
-    // Draw FPS in top-right of viewport content
-    if (showPerf_)
-    {
-        ImGui::SetCursorScreenPos(ImVec2(vpMax.x - 120.0f, vpMin.y + 10.0f));
-        ImGui::Text("FPS: %.1f", fps_);
-        ImGui::SetCursorScreenPos(ImVec2(vpMax.x - 120.0f, vpMin.y + 30.0f));
-        ImGui::Text("MS:  %.2f", ms_);
-    }
-
-    ImGui::SetCursorScreenPos(ImVec2(vpMin.x + 12.0f, vpMin.y + 10.0f));
-    if (ImGui::SmallButton(showMoveGizmo_ ? "Move Gizmo: ON" : "Move Gizmo: OFF"))
+    */
+    if (ImGui::SmallButton(showMoveGizmo_ ? "Gizmo: ON" : "Gizmo: OFF"))
     {
         showMoveGizmo_ = !showMoveGizmo_;
-        activeGizmoAxis_ = -1;
-        activeGizmoEntityId_ = 0;
     }
 
-    ImGui::SetCursorScreenPos(ImVec2(vpMin.x + 12.0f, vpMin.y + 32.0f));
-    ImGui::TextUnformatted("Left drag the colored axis arrows on a selected object");
+    ImGui::BeginDisabled(!showMoveGizmo_);
+
+    if (ImGui::RadioButton("Translate", currentGizmoOperation_ == ImGuizmo::TRANSLATE))
+    {
+        currentGizmoOperation_ = ImGuizmo::TRANSLATE;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Rotate", currentGizmoOperation_ == ImGuizmo::ROTATE))
+    {
+        currentGizmoOperation_ = ImGuizmo::ROTATE;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Scale", currentGizmoOperation_ == ImGuizmo::SCALE))
+    {
+        currentGizmoOperation_ = ImGuizmo::SCALE;
+    }
+
+    if (currentGizmoOperation_ != ImGuizmo::SCALE)
+    {
+        if (ImGui::RadioButton("World", currentGizmoMode_ == ImGuizmo::WORLD))
+        {
+            currentGizmoMode_ = ImGuizmo::WORLD;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Local", currentGizmoMode_ == ImGuizmo::LOCAL))
+        {
+            currentGizmoMode_ = ImGuizmo::LOCAL;
+        }
+    }
+    else
+    {
+        ImGui::TextUnformatted("Scale stays local because math drama is enough already");
+    }
+
+    ImGui::TextUnformatted("Grab the gizmo in the main scene window, not a dock tab");
+    ImGui::EndDisabled();
 
     ImGui::End();
+
     DrawViewportGizmo(scene, camera, selectedIndex);
 
 }
@@ -1191,164 +1202,139 @@ void UIManager::DrawAssetWindow(
 
 void UIManager::DrawViewportGizmo(Scene& scene, Camera& camera, int selectedIndex)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+    if (mainViewport == nullptr)
+    {
+        return;
+    }
+
+    viewportMinX_ = mainViewport->Pos.x;
+    viewportMinY_ = mainViewport->Pos.y;
+    viewportMaxX_ = mainViewport->Pos.x + mainViewport->Size.x;
+    viewportMaxY_ = mainViewport->Pos.y + mainViewport->Size.y;
+    viewportHovered_ = !io.WantCaptureMouse;
+
+    if (mainViewport->Size.x <= 1.0f || mainViewport->Size.y <= 1.0f)
+    {
+        return;
+    }
+
+    if (showPerf_)
+    {
+        char fpsText[32] = "";
+        char msText[32] = "";
+        std::snprintf(fpsText, sizeof(fpsText), "FPS: %.1f", fps_);
+        std::snprintf(msText, sizeof(msText), "MS: %.2f", ms_);
+
+        ImVec2 fpsTextSize = ImGui::CalcTextSize(fpsText);
+        ImVec2 msTextSize = ImGui::CalcTextSize(msText);
+        float overlayWidth = std::max(fpsTextSize.x, msTextSize.x) + 22.0f;
+        float overlayHeight = fpsTextSize.y + msTextSize.y + 18.0f;
+
+        ImVec2 overlayMax(
+            mainViewport->Pos.x + mainViewport->Size.x - 18.0f,
+            mainViewport->Pos.y + 18.0f + overlayHeight);
+        ImVec2 overlayMin(
+            overlayMax.x - overlayWidth,
+            mainViewport->Pos.y + 18.0f);
+
+        ImDrawList* overlayDrawList = ImGui::GetForegroundDrawList(mainViewport);
+        overlayDrawList->AddRectFilled(
+            overlayMin,
+            overlayMax,
+            IM_COL32(8, 10, 16, 180),
+            8.0f);
+        overlayDrawList->AddRect(
+            overlayMin,
+            overlayMax,
+            IM_COL32(255, 255, 255, 28),
+            8.0f);
+        overlayDrawList->AddText(
+            ImVec2(overlayMin.x + 11.0f, overlayMin.y + 5.0f),
+            IM_COL32(235, 238, 245, 255),
+            fpsText);
+        overlayDrawList->AddText(
+            ImVec2(overlayMin.x + 11.0f, overlayMin.y + 7.0f + fpsTextSize.y),
+            IM_COL32(180, 210, 255, 255),
+            msText);
+    }
+
     if (!showMoveGizmo_)
     {
-        activeGizmoAxis_ = -1;
-        activeGizmoEntityId_ = 0;
         return;
     }
 
     if (selectedIndex < 0 || selectedIndex >= (int)scene.GetObjects().size())
     {
-        if (!ImGui::IsMouseDown(0))
-        {
-            activeGizmoAxis_ = -1;
-            activeGizmoEntityId_ = 0;
-        }
+        return;
+    }
+
+    if (io.MousePos.x < -1e30f || io.MousePos.y < -1e30f)
+    {
         return;
     }
 
     auto& selectedObject = scene.GetObjects()[selectedIndex];
-    glm::vec3 gizmoAnchorWorld = GetSceneGizmoAnchor(selectedObject);
-    ImVec2 viewportMin(viewportMinX_, viewportMinY_);
-    ImVec2 viewportMax(viewportMaxX_, viewportMaxY_);
-    ImVec2 screenSize = ImGui::GetIO().DisplaySize;
 
-    if (viewportMax.x <= viewportMin.x || viewportMax.y <= viewportMin.y)
+    ImGuizmo::BeginFrame();
+    ImGuizmo::SetOrthographic(false);
+    ImGuizmo::SetDrawlist(ImGui::GetBackgroundDrawList(mainViewport));
+
+    //Hook gizmos to the real app viewport now, not that editor tab pretending to be the scene//
+    ImGuizmo::SetRect(
+        mainViewport->Pos.x,
+        mainViewport->Pos.y,
+        mainViewport->Size.x,
+        mainViewport->Size.y);
+    ImGuizmo::AllowAxisFlip(true);
+    ImGuizmo::Enable(viewportHovered_ || ImGuizmo::IsUsing() || ImGuizmo::IsOver());
+
+    glm::mat4 cameraView = camera.GetView();
+    glm::mat4 cameraProjection = camera.GetProjection(mainViewport->Size.x, mainViewport->Size.y);
+    glm::mat4 modelMatrix = selectedObject.transform.GetMatrix();
+
+    ImGuizmo::MODE gizmoMode =
+        (currentGizmoOperation_ == ImGuizmo::SCALE) ? ImGuizmo::LOCAL : currentGizmoMode_;
+
+    ImGuizmo::Manipulate(
+        glm::value_ptr(cameraView),
+        glm::value_ptr(cameraProjection),
+        currentGizmoOperation_,
+        gizmoMode,
+        glm::value_ptr(modelMatrix),
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr);
+
+    if (ImGuizmo::IsUsing())
     {
-        return;
-    }
+        glm::vec3 translation(0.0f);
+        glm::vec3 rotation(0.0f);
+        glm::vec3 scale(1.0f);
 
-    ImVec2 originScreen;
-    if (!ProjectWorldToScreen(gizmoAnchorWorld, camera, screenSize, originScreen))
-    {
-        if (!ImGui::IsMouseDown(0))
+        ImGuizmo::DecomposeMatrixToComponents(
+            glm::value_ptr(modelMatrix),
+            glm::value_ptr(translation),
+            glm::value_ptr(rotation),
+            glm::value_ptr(scale));
+
+        if (currentGizmoOperation_ == ImGuizmo::TRANSLATE)
         {
-            activeGizmoAxis_ = -1;
-            activeGizmoEntityId_ = 0;
+            selectedObject.transform.position = translation;
         }
-        return;
-    }
-
-    if (!PointInRect(originScreen, viewportMin, viewportMax))
-    {
-        if (!ImGui::IsMouseDown(0))
+        else if (currentGizmoOperation_ == ImGuizmo::ROTATE)
         {
-            activeGizmoAxis_ = -1;
-            activeGizmoEntityId_ = 0;
+            selectedObject.transform.rotation = rotation;
         }
-        return;
-    }
-
-    std::array<glm::vec3, 3> axisDirections =
-    {
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f)
-    };
-
-    std::array<ImVec2, 3> axisEndPoints{};
-    std::array<bool, 3> axisVisible{ false, false, false };
-    std::array<float, 3> axisPixelsPerUnit{ 1.0f, 1.0f, 1.0f };
-    std::array<ImVec2, 3> axisScreenDirections{};
-
-    float cameraDistance = glm::length(camera.position - gizmoAnchorWorld);
-    float handleWorldLength = std::clamp(cameraDistance * 0.07f, 0.30f, 1.20f);
-    ImVec2 mousePosition = ImGui::GetMousePos();
-
-    int hoveredAxis = -1;
-    float bestHoverDistance = 9999.0f;
-
-    for (int axisIndex = 0; axisIndex < 3; ++axisIndex)
-    {
-        glm::vec3 worldEndPoint = gizmoAnchorWorld + axisDirections[axisIndex] * handleWorldLength;
-        ImVec2 axisEndPoint;
-        if (!ProjectWorldToScreen(worldEndPoint, camera, screenSize, axisEndPoint))
+        else if (currentGizmoOperation_ == ImGuizmo::SCALE)
         {
-            continue;
-        }
-
-        float axisScreenLength = std::sqrt(
-            (axisEndPoint.x - originScreen.x) * (axisEndPoint.x - originScreen.x) +
-            (axisEndPoint.y - originScreen.y) * (axisEndPoint.y - originScreen.y));
-
-        if (axisScreenLength < 18.0f)
-        {
-            continue;
-        }
-
-        axisVisible[axisIndex] = true;
-        axisEndPoints[axisIndex] = axisEndPoint;
-        axisPixelsPerUnit[axisIndex] = axisScreenLength / handleWorldLength;
-        axisScreenDirections[axisIndex] = ImVec2(
-            (axisEndPoint.x - originScreen.x) / axisScreenLength,
-            (axisEndPoint.y - originScreen.y) / axisScreenLength);
-
-        if (!viewportHovered_ || !PointInRect(mousePosition, viewportMin, viewportMax))
-        {
-            continue;
-        }
-
-        float hoverDistance = DistanceToLineSegment(mousePosition, originScreen, axisEndPoint);
-        float tipDistance = std::sqrt(
-            (mousePosition.x - axisEndPoint.x) * (mousePosition.x - axisEndPoint.x) +
-            (mousePosition.y - axisEndPoint.y) * (mousePosition.y - axisEndPoint.y));
-        float pickDistance = std::min(hoverDistance, tipDistance);
-
-        if (pickDistance < 24.0f && pickDistance < bestHoverDistance)
-        {
-            bestHoverDistance = pickDistance;
-            hoveredAxis = axisIndex;
+            selectedObject.transform.scale = scale;
         }
     }
 
-    if (activeGizmoAxis_ != -1 && activeGizmoEntityId_ != selectedObject.entity.Id)
-    {
-        activeGizmoAxis_ = -1;
-        activeGizmoEntityId_ = 0;
-    }
-
-    if (activeGizmoAxis_ == -1 &&
-        hoveredAxis != -1 &&
-        ImGui::IsMouseClicked(0) &&
-        viewportHovered_)
-    {
-        activeGizmoAxis_ = hoveredAxis;
-        activeGizmoEntityId_ = selectedObject.entity.Id;
-        gizmoStartMouseX_ = mousePosition.x;
-        gizmoStartMouseY_ = mousePosition.y;
-        gizmoStartPosition_ = selectedObject.transform.position;
-        gizmoAxisDirection_ = axisDirections[hoveredAxis];
-        gizmoPixelsPerUnit_ = axisPixelsPerUnit[hoveredAxis];
-        gizmoAxisScreenX_ = axisScreenDirections[hoveredAxis].x;
-        gizmoAxisScreenY_ = axisScreenDirections[hoveredAxis].y;
-    }
-
-    if (activeGizmoAxis_ != -1 && activeGizmoEntityId_ == selectedObject.entity.Id)
-    {
-        if (ImGui::IsMouseDown(0))
-        {
-            float mouseDeltaAlongAxis =
-                (mousePosition.x - gizmoStartMouseX_) * gizmoAxisScreenX_ +
-                (mousePosition.y - gizmoStartMouseY_) * gizmoAxisScreenY_;
-
-            float worldUnitsMoved = mouseDeltaAlongAxis / std::max(gizmoPixelsPerUnit_, 1.0f);
-            if (ImGui::GetIO().KeyShift)
-            {
-                //Little snap mode because sometimes precision matters and sometimes the mouse is just being rude//
-                worldUnitsMoved = std::round(worldUnitsMoved * 4.0f) / 4.0f;
-            }
-
-            selectedObject.transform.position = gizmoStartPosition_ + gizmoAxisDirection_ * worldUnitsMoved;
-        }
-        else
-        {
-            activeGizmoAxis_ = -1;
-            activeGizmoEntityId_ = 0;
-        }
-    }
-
-    if (hoveredAxis != -1 || activeGizmoAxis_ != -1)
+    if (ImGuizmo::IsOver() || ImGuizmo::IsUsing())
     {
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
     }

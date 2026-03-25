@@ -1,58 +1,63 @@
 {
   "assets": {
     "meshes": [],
-    "textures": []
+    "textures": [
+      {
+        "key": "Viking_House",
+        "path": "../assets/Viking_House.png"
+      }
+    ]
   },
   "camera": {
     "fov": 45.0,
     "position": [
-      -0.6117889881134033,
-      4.301941871643066,
-      -10.2743558883667
+      -0.5183344483375549,
+      1.0918694734573364,
+      9.029570579528809
     ],
     "rotation": [
-      -21.189403533935547,
-      444.2373046875,
+      -19.61725616455078,
+      -82.03377532958984,
       0.0
     ]
   },
   "lights": [
     {
-      "ambientStrength": 0.4320000112056732,
+      "ambientStrength": 0.5040000081062317,
       "color": [
         1.0,
         1.0,
         1.0
       ],
-      "innerAngle": 37.46699905395508,
-      "intensity": 4.5229997634887695,
-      "outerAngle": 42.21099853515625,
+      "innerAngle": 51.766998291015625,
+      "intensity": 6.9770002365112305,
+      "outerAngle": 58.17100143432617,
       "position": [
-        2.0,
-        3.0,
-        2.0
+        -7.050000190734863,
+        8.100000381469727,
+        -8.25
       ],
       "rotation": [
-        0.0,
-        -90.0,
-        0.0
+        -80.0,
+        -23.0,
+        249.5
       ]
     }
   ],
   "objects": [
     {
-      "albedoKey": "None",
-      "id": 2,
-      "meshKey": "Cube",
-      "name": "SplinePoint_0",
-      "shininess": 32.0,
-      "specularKey": "None",
-      "textureKey": "Default",
+      "albedoKey": "Viking_House",
+      "id": 8,
+      "meshKey": "ImportedOBJ",
+      "name": "Player",
+      "shininess": 64.0,
+      "specularKey": "Default",
+      "textureKey": "Viking_House",
       "transform": {
         "position": [
-          -6.389999866485596,
-          1.8600000143051147,
-          -0.14000000059604645
+          0.05400000140070915,
+          -0.19900000095367432,
+          2.674999952316284
         ],
         "rotation": [
           0.0,
@@ -60,15 +65,15 @@
           0.0
         ],
         "scale": [
-          1.0,
-          1.0,
-          1.0
+          0.3499999940395355,
+          0.3499999940395355,
+          0.3499999940395355
         ]
       }
     },
     {
       "albedoKey": "None",
-      "id": 3,
+      "id": 9,
       "meshKey": "Cube",
       "name": "SplinePoint_1",
       "shininess": 32.0,
@@ -76,9 +81,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          -3.2699999809265137,
-          1.4700000286102295,
-          0.5400000214576721
+          0.0,
+          0.0,
+          -5.0
         ],
         "rotation": [
           0.0,
@@ -94,7 +99,33 @@
     },
     {
       "albedoKey": "None",
-      "id": 4,
+      "id": 15,
+      "meshKey": "Cube",
+      "name": "SplinePoint_0",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 16,
       "meshKey": "Cube",
       "name": "SplinePoint_2",
       "shininess": 32.0,
@@ -102,9 +133,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          -1.1299999952316284,
-          1.2799999713897705,
-          1.75
+          2.0,
+          0.0,
+          -10.0
         ],
         "rotation": [
           0.0,
@@ -120,7 +151,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 5,
+      "id": 17,
       "meshKey": "Cube",
       "name": "SplinePoint_3",
       "shininess": 32.0,
@@ -128,9 +159,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          1.409999966621399,
-          1.0399999618530273,
-          2.5999999046325684
+          -2.0,
+          0.0,
+          -15.0
         ],
         "rotation": [
           0.0,
@@ -146,7 +177,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 6,
+      "id": 18,
       "meshKey": "Cube",
       "name": "SplinePoint_4",
       "shininess": 32.0,
@@ -154,9 +185,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          3.1600000858306885,
-          1.100000023841858,
-          0.8899999856948853
+          0.0,
+          1.0,
+          -20.0
         ],
         "rotation": [
           0.0,
@@ -172,7 +203,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 7,
+      "id": 19,
       "meshKey": "Cube",
       "name": "SplinePoint_5",
       "shininess": 32.0,
@@ -180,9 +211,61 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          5.53000020980835,
-          0.5600000023841858,
-          0.25
+          2.0,
+          1.0,
+          -25.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 20,
+      "meshKey": "Cube",
+      "name": "SplinePoint_6",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          -30.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "albedoKey": "None",
+      "id": 21,
+      "meshKey": "Cube",
+      "name": "SplinePoint_7",
+      "shininess": 32.0,
+      "specularKey": "None",
+      "textureKey": "Default",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          -35.0
         ],
         "rotation": [
           0.0,

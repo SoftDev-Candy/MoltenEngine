@@ -70,8 +70,8 @@ namespace GameUI
             }
             else if (game.GetState() == SplineShooterGame::GameState::Lose)
             {
-                ImGui::TextUnformatted("Ship exploded. Very dramatic.");
-                ImGui::TextUnformatted("Press Enter or hit Restart to run it back.");
+                ImGui::TextUnformatted("Ship exploded. Boom BOOM.");
+                ImGui::TextUnformatted("Press Enter or hit Restart to play again.");
 
                 if (ImGui::Button("Restart") && onStartRequested)
                 {

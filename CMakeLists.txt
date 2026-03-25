@@ -38,6 +38,7 @@ add_executable(MoltenEngine src/main.cpp
         external/imgui/imgui_impl_glfw.cpp
         external/imgui/imgui_impl_opengl3.cpp
         external/imgui/imgui_demo.cpp
+        external/ImGuizmo/ImGuizmo.cpp
         external/stb/stb_image.h
         src/Texture.cpp
         src/Texture.hpp
@@ -128,6 +129,7 @@ target_include_directories(MoltenEngine PRIVATE
         external/glfw/include
         external/glm
         external/imgui
+        external/ImGuizmo
         external/stb
         external/nlohmann
         message/

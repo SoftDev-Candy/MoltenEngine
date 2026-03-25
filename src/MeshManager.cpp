@@ -7,7 +7,7 @@
 
 Mesh * MeshManager::Add(const std::string key, std::unique_ptr<Mesh> mesh)
 {
-    //1. To be safe lets not overwrite in mem just find it and if it exists return//
+    //1. To be safe lets not overwrite in mem just find that and if it exists return if it dont well uhhh lol//
     auto it = meshes.find(key);
     if (it != meshes.end())
     {

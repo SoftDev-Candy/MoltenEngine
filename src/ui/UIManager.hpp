@@ -6,6 +6,8 @@
 #define B_WENGINE_UIMANAGER_HPP
 #include "../Camera.hpp"
 #include "../Scene.hpp"
+#include "imgui.h"
+#include "ImGuizmo.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -56,6 +58,8 @@ private:
 
     bool showPerf_ = true;
     bool showMoveGizmo_ = true;
+    ImGuizmo::OPERATION currentGizmoOperation_ = ImGuizmo::TRANSLATE;
+    ImGuizmo::MODE currentGizmoMode_ = ImGuizmo::WORLD;
     float fps_ = 0.0f;
     float ms_  = 0.0f;
 

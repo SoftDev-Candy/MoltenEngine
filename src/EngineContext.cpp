@@ -723,19 +723,8 @@ void EngineContext::update()
 
 void EngineContext::Render()
 {
-    bool renderSceneGizmo =
-        mode_ == EngineMode::Editor &&
-        selectedIndex >= 0 &&
-        selectedIndex < (int)scene.GetObjects().size();
-
-    if (renderSceneGizmo)
-    {
-        renderer.SetSelectionGizmo(GetSceneGizmoAnchor(scene.GetObjects()[selectedIndex]), true);
-    }
-    else
-    {
-        renderer.SetSelectionGizmo(glm::vec3(0.0f), false);
-    }
+    //Old scene gizmo circus stays switched off now that ImGuizmo handles the editor handles for real//
+    renderer.SetSelectionGizmo(glm::vec3(0.0f), false);
 
     renderer.Begin();
     renderer.RenderScene(scene ,camera);
