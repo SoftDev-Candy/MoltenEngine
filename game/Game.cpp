@@ -153,6 +153,13 @@ void SplineShooterGame::SetAsteroidMesh(Mesh* asteroidMesh, const std::string& a
     asteroidMeshKey_ = asteroidMeshKey;
 }
 
+void SplineShooterGame::SetSecondaryAsteroidMesh(Mesh* asteroidMesh, const std::string& asteroidMeshKey)
+{
+    //Second rock buddy goes here so obstacle waves dont look like the same space potato copy-pasted forever//
+    secondaryAsteroidMesh_ = asteroidMesh;
+    secondaryAsteroidMeshKey_ = asteroidMeshKey;
+}
+
 SceneObject* SplineShooterGame::FindObjectByName(Scene& scene, const std::string& objectName)
 {
     for (auto& sceneObject : scene.GetObjects())
@@ -327,17 +334,32 @@ void SplineShooterGame::UpdateSplineCameraRig(
     glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
     glm::vec3 flattenedForwardDirection =
         SafeNormalize(glm::vec3(forwardDirection.x, 0.0f, forwardDirection.z), glm::vec3(0.0f, 0.0f, -1.0f));
+    (void)sampledSplineT;
 
-    float maxSplineT = std::max(0.0f, (float)(controlPoints.size() - 3) - 0.001f);
-    float lookAheadSplineT = std::clamp(sampledSplineT + cameraTrackLookAheadT_, 0.0f, maxSplineT);
-    glm::vec3 lookAheadTrackPosition = SampleCatmullRom(controlPoints, lookAheadSplineT);
+    if (snapImmediately || !splineCameraInitialized_)
+    {
+        splineCameraRailOrigin_ = trackCenterPosition;
+        splineCameraRailForward_ = flattenedForwardDirection;
+        splineCameraRailRight_ =
+            SafeNormalize(glm::cross(splineCameraRailForward_, worldUp), glm::vec3(1.0f, 0.0f, 0.0f));
+    }
+
+    glm::vec3 trackDeltaFromCameraStart = trackCenterPosition - splineCameraRailOrigin_;
+    float forwardProgressAlongRail = glm::dot(trackDeltaFromCameraStart, splineCameraRailForward_);
+    float lateralProgressAlongRail = glm::dot(trackDeltaFromCameraStart, splineCameraRailRight_);
+    float verticalProgressAlongRail = glm::dot(trackDeltaFromCameraStart, worldUp);
 
     glm::vec3 desiredCameraPosition =
-        trackCenterPosition -
-        flattenedForwardDirection * followDistance_ +
-        worldUp * followHeight_;
+        splineCameraRailOrigin_ +
+        splineCameraRailForward_ * (forwardProgressAlongRail - followDistance_) +
+        splineCameraRailRight_ * (lateralProgressAlongRail * cameraTrackLateralFollow_) +
+        worldUp * (followHeight_ + verticalProgressAlongRail * cameraTrackVerticalFollow_);
 
-    glm::vec3 desiredCameraTarget = lookAheadTrackPosition + worldUp * cameraAimHeight_;
+    glm::vec3 desiredCameraTarget =
+        splineCameraRailOrigin_ +
+        splineCameraRailForward_ * (forwardProgressAlongRail + lookAheadDistance_ + cameraTrackLookAheadT_) +
+        splineCameraRailRight_ * (lateralProgressAlongRail * cameraTrackLateralFollow_) +
+        worldUp * (cameraAimHeight_ + verticalProgressAlongRail * cameraTrackVerticalFollow_);
 
     if (snapImmediately || !splineCameraInitialized_)
     {
@@ -350,9 +372,9 @@ void SplineShooterGame::UpdateSplineCameraRig(
         camera.position = glm::mix(camera.position, desiredCameraPosition, followBlend);
     }
 
-    glm::vec3 cameraLookDirection = SafeNormalize(desiredCameraTarget - camera.position, flattenedForwardDirection);
+    glm::vec3 cameraLookDirection = SafeNormalize(desiredCameraTarget - camera.position, splineCameraRailForward_);
 
-    //The camera stares down the track now, not at the strafing ship, so dodge motion stops yanking it sideways//
+    //The rail camera only moves forward now, so left-right spline wiggles stop dragging the whole view around like nonsense//
     camera.rotation.y = glm::degrees(std::atan2(cameraLookDirection.z, cameraLookDirection.x));
     camera.rotation.x = glm::degrees(std::asin(std::clamp(cameraLookDirection.y, -1.0f, 1.0f)));
 }
@@ -454,15 +476,20 @@ void SplineShooterGame::SpawnObstacles(Scene& scene, const std::vector<glm::vec3
         return;
     }
 
-    Mesh* resolvedAsteroidMesh = asteroidMesh_ ? asteroidMesh_ : cubeMesh_;
-    std::string resolvedAsteroidMeshKey = asteroidMesh_ ? asteroidMeshKey_ : "Cube";
-
     //Spawn some chunky space pebbles along the spline so the player has homework to shoot//
     for (float splineT = 0.8f; splineT < maxSplineT - 0.15f; splineT += 0.7f)
     {
         scene.CreateObject();
         auto& obstacleObject = scene.GetObjects().back();
         int obstacleNumber = nextObstacleIndex_++;
+
+        Mesh* resolvedAsteroidMesh = asteroidMesh_ ? asteroidMesh_ : cubeMesh_;
+        std::string resolvedAsteroidMeshKey = asteroidMesh_ ? asteroidMeshKey_ : "Cube";
+        if ((obstacleNumber % 2) == 1 && secondaryAsteroidMesh_ != nullptr)
+        {
+            resolvedAsteroidMesh = secondaryAsteroidMesh_;
+            resolvedAsteroidMeshKey = secondaryAsteroidMeshKey_;
+        }
 
         obstacleObject.name = "Obstacle_" + std::to_string(obstacleNumber);
         obstacleObject.mesh.mesh = resolvedAsteroidMesh;
@@ -512,6 +539,9 @@ void SplineShooterGame::Start(Scene& scene)
     nextBulletIndex_ = 0;
     nextObstacleIndex_ = 0;
     splineCameraInitialized_ = false;
+    splineCameraRailOrigin_ = glm::vec3(0.0f);
+    splineCameraRailForward_ = glm::vec3(0.0f, 0.0f, -1.0f);
+    splineCameraRailRight_ = glm::vec3(1.0f, 0.0f, 0.0f);
 
     ClearRuntimeObjects(scene);
     EnsurePlayerObject(scene); //Make sure the ship exists before the HUD starts bossing us around//
@@ -536,6 +566,9 @@ void SplineShooterGame::BeginRound(Scene& scene)
     nextObstacleIndex_ = 0;
     controlMode_ = ControlMode::SplineFollow; //Every fresh round starts on the actual assignment track, imagine that//
     splineCameraInitialized_ = false;
+    splineCameraRailOrigin_ = glm::vec3(0.0f);
+    splineCameraRailForward_ = glm::vec3(0.0f, 0.0f, -1.0f);
+    splineCameraRailRight_ = glm::vec3(1.0f, 0.0f, 0.0f);
 
     std::vector<glm::vec3> controlPoints = CollectSplineControlPoints(scene);
     if ((int)controlPoints.size() < 4)
@@ -557,6 +590,9 @@ void SplineShooterGame::Stop(Scene& scene)
     horizontalStrafeInput_ = 0.0f;
     verticalStrafeInput_ = 0.0f;
     splineCameraInitialized_ = false;
+    splineCameraRailOrigin_ = glm::vec3(0.0f);
+    splineCameraRailForward_ = glm::vec3(0.0f, 0.0f, -1.0f);
+    splineCameraRailRight_ = glm::vec3(1.0f, 0.0f, 0.0f);
 
     ClearRuntimeObjects(scene);
 }

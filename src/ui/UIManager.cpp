@@ -799,6 +799,7 @@ else
         }
 
         ImGui::Separator();
+        ImGui::TextDisabled("In Play, light 0 follows behind the player so the obstacles fade into view.");
 
         changed |= ImGui::DragFloat3("Position", &edited.position.x, 0.05f);
         changed |= ImGui::DragFloat3("Rotation", &edited.rotation.x, 0.5f);

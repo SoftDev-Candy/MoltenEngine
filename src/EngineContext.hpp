@@ -71,11 +71,20 @@ Camera camera;
     void SetEntityTexture(Entity e, const std::string& textureKey);
 
 
-    Scene& GetScene() { return scene; }
-    const Scene& GetScene() const { return scene; }
+    Scene& GetScene()
+    {
+        return scene;
+    }
+    const Scene& GetScene() const
+    {
+        return scene;
+    }
 
     void SetMipmapsEnabled(bool enabled);
-    bool GetMipmapsEnabled() const { return useMipmaps; }
+    bool GetMipmapsEnabled() const
+    {
+        return useMipmaps;
+    }
 
     void SetEntityAlbedo(Entity e, const std::string& albedoKey);
     void SetEntitySpecular(Entity e, const std::string& specularKey);
@@ -102,6 +111,7 @@ Camera camera;
     //Game Start and Stop Functions
     void StartGame();
     void StopGame();
+    void UpdatePlayFollowLight();
 
     //Engine Mode enum class call
     EngineMode mode_ = EngineMode::Editor;
@@ -133,6 +143,10 @@ private:
     bool startRoundKeyWasDown_ = false;
     bool shootKeyWasDown_ = false;
     bool stopGameKeyWasDown_ = false;
+    int playFollowLightIndex_ = -1;
+    bool playFollowLightAdded_ = false;
+    bool playFollowLightHadOriginal_ = false;
+    Light cachedPlayFollowLight_{};
 
     float mouseSensitivity = 0.12f;   // tweak
     float pitchClamp = 89.0f;

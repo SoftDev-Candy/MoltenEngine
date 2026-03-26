@@ -38,7 +38,11 @@ public:
 
     void DrawPlayHUD(const SplineShooterGame& game, std::function<void(std::unique_ptr<Message>)> pushMessage);
 
-    void SetPerfStats(float fps, float ms) { fps_ = fps; ms_ = ms; }
+    void SetPerfStats(float fps, float ms)
+    {
+        fps_ = fps;
+        ms_ = ms;
+    }
 
     void LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pushMessage);
 

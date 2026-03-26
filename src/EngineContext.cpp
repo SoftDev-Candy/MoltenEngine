@@ -21,6 +21,9 @@
 #include "message/SceneSerializer.hpp"
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 static bool TextureKeyIsUsable(const std::string& textureKey)
 {
@@ -64,6 +67,55 @@ static Light MakeSplineShooterLightPreset()
     splineShooterLight.intensity = 3.8f;
     splineShooterLight.ambientStrength = 0.18f;
     return splineShooterLight;
+}
+
+static glm::vec3 SafeNormalizeDirection(const glm::vec3& direction, const glm::vec3& fallbackDirection)
+{
+    float directionLength = glm::length(direction);
+    if (directionLength <= 0.0001f)
+    {
+        return fallbackDirection;
+    }
+
+    return direction / directionLength;
+}
+
+static void AimLightAlongDirection(Light& light, const glm::vec3& direction)
+{
+    glm::vec3 safeDirection = SafeNormalizeDirection(direction, glm::vec3(1.0f, 0.0f, 0.0f));
+    light.rotation.x = glm::degrees(std::asin(std::clamp(safeDirection.y, -1.0f, 1.0f)));
+    light.rotation.y = glm::degrees(std::atan2(safeDirection.z, safeDirection.x));
+    light.rotation.z = 0.0f;
+}
+
+static std::string FindModelPathByStemPrefix(const fs::path& modelsDirectory, const std::string& stemPrefix)
+{
+    if (!fs::exists(modelsDirectory))
+    {
+        return "";
+    }
+
+    for (const auto& entry : fs::directory_iterator(modelsDirectory))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+
+        fs::path modelPath = entry.path();
+        if (modelPath.extension() != ".obj")
+        {
+            continue;
+        }
+
+        std::string modelStem = modelPath.stem().string();
+        if (modelStem.rfind(stemPrefix, 0) == 0)
+        {
+            return modelPath.generic_string();
+        }
+    }
+
+    return "";
 }
 
 // Save current editor state
@@ -181,6 +233,12 @@ void EngineContext::StartGame()
     std::string resolvedAsteroidMeshKey = splineGame_.GetPreferredAsteroidMeshKey();
     Mesh* resolvedAsteroidMesh = meshmanager.Get(resolvedAsteroidMeshKey);
 
+    if (resolvedAsteroidMesh == nullptr && meshmanager.Get("Asteroid_1c") != nullptr)
+    {
+        resolvedAsteroidMesh = meshmanager.Get("Asteroid_1c");
+        resolvedAsteroidMeshKey = "Asteroid_1c";
+    }
+
     if (resolvedAsteroidMesh == nullptr && meshmanager.Get("asteroid") != nullptr)
     {
         resolvedAsteroidMesh = meshmanager.Get("asteroid");
@@ -193,17 +251,39 @@ void EngineContext::StartGame()
         resolvedAsteroidMeshKey = "Cube";
     }
 
+    Mesh* resolvedSecondaryAsteroidMesh = meshmanager.Get("Asteroid_1c");
+    std::string resolvedSecondaryAsteroidMeshKey = "Asteroid_1c";
+
+    if (resolvedSecondaryAsteroidMesh == nullptr)
+    {
+        resolvedSecondaryAsteroidMesh = resolvedAsteroidMesh;
+        resolvedSecondaryAsteroidMeshKey = resolvedAsteroidMeshKey;
+    }
+
     splineGame_.SetPlayerShipMesh(resolvedPlayerMesh, resolvedPlayerMeshKey);
     splineGame_.SetAsteroidMesh(resolvedAsteroidMesh, resolvedAsteroidMeshKey);
+    splineGame_.SetSecondaryAsteroidMesh(resolvedSecondaryAsteroidMesh, resolvedSecondaryAsteroidMeshKey);
     splineGame_.SyncViewAngles(camera.rotation.y, camera.rotation.x);
+
+    playFollowLightIndex_ = -1;
+    playFollowLightAdded_ = false;
+    playFollowLightHadOriginal_ = false;
 
     if (scene.GetLights().empty())
     {
-        int sunIndex = scene.AddLight();
-        if (sunIndex >= 0 && sunIndex < (int)scene.GetLights().size())
-        {
-            scene.GetLights()[sunIndex] = MakeSplineShooterLightPreset();
-        }
+        playFollowLightIndex_ = scene.AddLight();
+        playFollowLightAdded_ = true;
+    }
+    else
+    {
+        playFollowLightIndex_ = 0;
+        playFollowLightHadOriginal_ = true;
+        cachedPlayFollowLight_ = scene.GetLights()[0];
+    }
+
+    if (playFollowLightIndex_ >= 0 && playFollowLightIndex_ < (int)scene.GetLights().size())
+    {
+        scene.GetLights()[playFollowLightIndex_] = MakeSplineShooterLightPreset();
     }
 
     mode_ = EngineMode::Play;
@@ -220,6 +300,22 @@ void EngineContext::StopGame()
 {
     mode_ = EngineMode::Editor;
     splineGame_.Stop(scene);
+
+    if (playFollowLightIndex_ >= 0)
+    {
+        if (playFollowLightAdded_)
+        {
+            scene.RemoveLight(playFollowLightIndex_);
+        }
+        else if (playFollowLightHadOriginal_ && playFollowLightIndex_ < (int)scene.GetLights().size())
+        {
+            scene.GetLights()[playFollowLightIndex_] = cachedPlayFollowLight_;
+        }
+    }
+
+    playFollowLightIndex_ = -1;
+    playFollowLightAdded_ = false;
+    playFollowLightHadOriginal_ = false;
     mouseLookActive = false;
     firstMouse = true;
     toggleControlModeKeyWasDown_ = false;
@@ -551,6 +647,24 @@ void EngineContext::init()
         );
     }
 
+    auto tryAutoImportModelByPrefix = [this](const std::string& meshKey, const std::string& modelStemPrefix)
+    {
+        if (meshmanager.Has(meshKey))
+        {
+            return;
+        }
+
+        std::string modelPath = FindModelPathByStemPrefix("../assets/models", modelStemPrefix);
+        if (!modelPath.empty())
+        {
+            ImportObjAsMesh(meshKey, modelPath);
+        }
+    };
+
+    //These asteroid files had Windows duplicate-name nonsense, so we find them by prefix and move on with our lives//
+    tryAutoImportModelByPrefix("Asteroid_1d", "Asteroid_1d");
+    tryAutoImportModelByPrefix("Asteroid_1c", "Asteroid_1c");
+
     //Give the light its own little direction arrow so we stop guessing where the poor thing is aiming//
     ObjMeshData lightGizmoImported = LoadOBJ("../assets/models/LightGizmo.obj", false);
     if (!lightGizmoImported.vertices.empty() && !lightGizmoImported.indices.empty())
@@ -741,6 +855,7 @@ void EngineContext::update()
         splineGame_.SetInput(horizontalStrafeInput, verticalStrafeInput);
         splineGame_.SetMoveForward(forwardInput);
         splineGame_.Update(deltaTime, scene, camera);
+        UpdatePlayFollowLight();
         std::cout << "[Engine] mode=PLAY dt=" << deltaTime << "\n";
     }
 
@@ -996,6 +1111,58 @@ void EngineContext::DisplayCalculateFrameRate()
         fpsFrames = 0;
         fpsTimer = 0.0;
     }
+}
+
+void EngineContext::UpdatePlayFollowLight()
+{
+    if (mode_ != EngineMode::Play)
+    {
+        return;
+    }
+
+    if (playFollowLightIndex_ < 0 || playFollowLightIndex_ >= (int)scene.GetLights().size())
+    {
+        return;
+    }
+
+    SceneObject* playerObject = nullptr;
+    for (auto& sceneObject : scene.GetObjects())
+    {
+        if (sceneObject.name == "Player")
+        {
+            playerObject = &sceneObject;
+            break;
+        }
+    }
+
+    if (playerObject == nullptr)
+    {
+        return;
+    }
+
+    Light& playFollowLight = scene.GetLights()[playFollowLightIndex_];
+    glm::vec3 forwardDirection = SafeNormalizeDirection(
+        splineGame_.GetForwardDirection(),
+        glm::vec3(0.0f, 0.0f, -1.0f));
+    glm::vec3 upDirection = SafeNormalizeDirection(
+        splineGame_.GetUpDirection(),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+
+    glm::vec3 lightPosition =
+        playerObject->transform.position -
+        forwardDirection * 3.4f +
+        upDirection * 2.6f;
+    glm::vec3 lightTarget =
+        playerObject->transform.position +
+        forwardDirection * 9.0f +
+        upDirection * 0.35f;
+
+    playFollowLight.position = lightPosition;
+    playFollowLight.innerAngle = 20.0f;
+    playFollowLight.outerAngle = 34.0f;
+    playFollowLight.intensity = 4.0f;
+    playFollowLight.ambientStrength = 0.18f;
+    AimLightAlongDirection(playFollowLight, lightTarget - lightPosition);
 }
 
 SceneObject * EngineContext::FindObject(Entity e)

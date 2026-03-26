@@ -49,22 +49,61 @@ public:
     }
 
     void Shoot(Scene& scene);
-    void SetMoveForward(float forwardInput) { forwardInput_ = forwardInput; }
+    void SetMoveForward(float forwardInput)
+    {
+        forwardInput_ = forwardInput;
+    }
     void SetLookDelta(float mouseDeltaX, float mouseDeltaY);
     void SyncViewAngles(float yawDegrees, float pitchDegrees);
     void ToggleControlMode();
     void SetPlayerShipMesh(Mesh* playerShipMesh, const std::string& playerShipMeshKey);
     void SetAsteroidMesh(Mesh* asteroidMesh, const std::string& asteroidMeshKey);
-    void SetPreferredPlayerMeshKey(const std::string& preferredPlayerMeshKey) { preferredPlayerMeshKey_ = preferredPlayerMeshKey; }
-    void SetPreferredAsteroidMeshKey(const std::string& preferredAsteroidMeshKey) { preferredAsteroidMeshKey_ = preferredAsteroidMeshKey; }
+    void SetSecondaryAsteroidMesh(Mesh* asteroidMesh, const std::string& asteroidMeshKey);
+    void SetPreferredPlayerMeshKey(const std::string& preferredPlayerMeshKey)
+    {
+        preferredPlayerMeshKey_ = preferredPlayerMeshKey;
+    }
+    void SetPreferredAsteroidMeshKey(const std::string& preferredAsteroidMeshKey)
+    {
+        preferredAsteroidMeshKey_ = preferredAsteroidMeshKey;
+    }
 
-    bool IsRunning() const { return running_; }
-    int GetHealth() const { return health_; }
-    int GetScore() const { return score_; }
-    GameState GetState() const { return state_; }
-    ControlMode GetControlMode() const { return controlMode_; }
-    const std::string& GetPreferredPlayerMeshKey() const { return preferredPlayerMeshKey_; }
-    const std::string& GetPreferredAsteroidMeshKey() const { return preferredAsteroidMeshKey_; }
+    bool IsRunning() const
+    {
+        return running_;
+    }
+    int GetHealth() const
+    {
+        return health_;
+    }
+    int GetScore() const
+    {
+        return score_;
+    }
+    GameState GetState() const
+    {
+        return state_;
+    }
+    ControlMode GetControlMode() const
+    {
+        return controlMode_;
+    }
+    const std::string& GetPreferredPlayerMeshKey() const
+    {
+        return preferredPlayerMeshKey_;
+    }
+    const std::string& GetPreferredAsteroidMeshKey() const
+    {
+        return preferredAsteroidMeshKey_;
+    }
+    const glm::vec3& GetForwardDirection() const
+    {
+        return forwardDirection_;
+    }
+    const glm::vec3& GetUpDirection() const
+    {
+        return upDirection_;
+    }
     const char* GetStateLabel() const;
 
 private:
@@ -95,7 +134,12 @@ private:
     float cameraTrackLookAheadT_ = 0.35f; //How far ahead on the spline the camera stares so turns feel clean instead of twitchy//
     float cameraAimHeight_ = 0.35f; //Slight aim lift so the camera looks over the ship and not directly into its skull//
     float cameraFollowResponsiveness_ = 10.0f; //Bigger = snappier, smaller = more floaty space soap//
+    float cameraTrackLateralFollow_ = 0.0f; //Zero means spline turns dont drag the camera sideways like a shopping cart wheel//
+    float cameraTrackVerticalFollow_ = 0.0f; //Keeping this calm too so the rail camera feels locked and not seasick//
     bool splineCameraInitialized_ = false;
+    glm::vec3 splineCameraRailOrigin_{0.0f, 0.0f, 0.0f};
+    glm::vec3 splineCameraRailForward_{0.0f, 0.0f, -1.0f};
+    glm::vec3 splineCameraRailRight_{1.0f, 0.0f, 0.0f};
 
     // Last Basis From Spline
     glm::vec3 forwardDirection_{0.0f, 0.0f, -1.0f};
@@ -107,10 +151,12 @@ private:
     Texture* defaultTexture_ = nullptr;
     Mesh* playerShipMesh_ = nullptr;
     Mesh* asteroidMesh_ = nullptr;
+    Mesh* secondaryAsteroidMesh_ = nullptr;
     std::string playerShipMeshKey_ = "Cube"; //Actual thing we ended up using after all the fallback nonsense//
     std::string preferredPlayerMeshKey_ = "D5Class"; //What we WANT if the mesh goblins actually loaded it//
     std::string asteroidMeshKey_ = "Cube";
-    std::string preferredAsteroidMeshKey_ = "Asteroid";
+    std::string secondaryAsteroidMeshKey_ = "Cube";
+    std::string preferredAsteroidMeshKey_ = "Asteroid_1d";
 
     // ---- Bullets & Obstacles ----
     struct Bullet
