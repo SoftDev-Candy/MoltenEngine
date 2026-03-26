@@ -269,6 +269,20 @@ static glm::vec3 GetSceneGizmoAnchor(const SceneObject& sceneObject)
     return sceneObject.transform.position + worldUp * (topOffset + extraPadding);
 }
 
+static Light MakeSplineShooterLightPreset()
+{
+    Light splineShooterLight;
+    //Not really "sunlight" sunlight, more like a nice dramatic key light so the ship stops looking like a potato in space//
+    splineShooterLight.position = glm::vec3(6.5f, 8.0f, 4.0f);
+    splineShooterLight.rotation = glm::vec3(-38.0f, -128.0f, 0.0f);
+    splineShooterLight.innerAngle = 18.0f;
+    splineShooterLight.outerAngle = 30.0f;
+    splineShooterLight.color = glm::vec3(1.0f, 0.97f, 0.90f);
+    splineShooterLight.intensity = 3.8f;
+    splineShooterLight.ambientStrength = 0.18f;
+    return splineShooterLight;
+}
+
 void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
                      std::function<Mesh*(const std::string&)> getMeshByKey,
                      std::function<std::vector<std::string>()> listMeshKeys,
@@ -731,6 +745,15 @@ if (ImGui::Button("+ Add Light"))
 }
 ImGui::SameLine();
 
+if (ImGui::Button("+ Spline Game Light"))
+{
+    int newLightIndex = (int)lights.size();
+    pushMessage(std::make_unique<AddLightMessage>());
+    pushMessage(std::make_unique<UpdateLightMessage>(newLightIndex, MakeSplineShooterLightPreset()));
+    selectedLight = newLightIndex;
+}
+ImGui::SameLine();
+
 bool canDelete = !lights.empty() && selectedLight >= 0 && selectedLight < (int)lights.size();
 ImGui::BeginDisabled(!canDelete);
 if (ImGui::Button("Delete Light"))
@@ -769,6 +792,14 @@ else
         Light edited = lights[selectedLight];
         bool changed = false;
 
+        if (ImGui::Button("Apply Spline Shooter Preset"))
+        {
+            edited = MakeSplineShooterLightPreset();
+            changed = true;
+        }
+
+        ImGui::Separator();
+
         changed |= ImGui::DragFloat3("Position", &edited.position.x, 0.05f);
         changed |= ImGui::DragFloat3("Rotation", &edited.rotation.x, 0.5f);
         changed |= ImGui::SliderFloat("Inner Angle", &edited.innerAngle, 1.0f, 60.0f);
@@ -779,6 +810,8 @@ else
         changed |= ImGui::ColorEdit3("Color", &edited.color.x);
         changed |= ImGui::SliderFloat("Intensity", &edited.intensity, 0.0f, 10.0f);
         changed |= ImGui::SliderFloat("Ambient", &edited.ambientStrength, 0.0f, 1.0f);
+
+        ImGui::TextDisabled("Space shooters do not need literal sunlight, just one good dramatic light.");
 
         if (changed)
         {

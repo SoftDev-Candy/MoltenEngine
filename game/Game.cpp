@@ -129,6 +129,7 @@ void SplineShooterGame::ToggleControlMode()
     if (controlMode_ == ControlMode::FreeFly)
     {
         controlMode_ = ControlMode::SplineFollow;
+        splineCameraInitialized_ = false; //When we come back to the rail cam we re-seat it cleanly instead of dragging old freefly baggage around//
     }
     else
     {
@@ -295,7 +296,8 @@ void SplineShooterGame::PlacePlayerAtTrackStart(Scene& scene, Camera& camera)
     }
 
     glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
-    glm::vec3 playerPosition = SampleCatmullRom(controlPoints, 0.0f);
+    glm::vec3 trackCenterPosition = SampleCatmullRom(controlPoints, 0.0f);
+    glm::vec3 playerPosition = trackCenterPosition;
     glm::vec3 forwardDirection = SafeNormalize(TangentCatmullRom(controlPoints, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
     glm::vec3 rightDirection = SafeNormalize(glm::cross(forwardDirection, worldUp), glm::vec3(1.0f, 0.0f, 0.0f));
     glm::vec3 upDirection = SafeNormalize(glm::cross(rightDirection, forwardDirection), worldUp);
@@ -305,14 +307,54 @@ void SplineShooterGame::PlacePlayerAtTrackStart(Scene& scene, Camera& camera)
     upDirection_ = upDirection;
 
     playerObject->transform.position = playerPosition;
+    UpdateSplineCameraRig(0.0f, controlPoints, 0.0f, trackCenterPosition, forwardDirection, camera, true);
+}
 
-    glm::vec3 cameraPosition = playerPosition - forwardDirection * followDistance_ + worldUp * followHeight_;
-    glm::vec3 cameraTarget = playerPosition + forwardDirection * lookAheadDistance_;
-    glm::vec3 cameraLookDirection = SafeNormalize(cameraTarget - cameraPosition, forwardDirection);
+void SplineShooterGame::UpdateSplineCameraRig(
+    float deltaTime,
+    const std::vector<glm::vec3>& controlPoints,
+    float sampledSplineT,
+    const glm::vec3& trackCenterPosition,
+    const glm::vec3& forwardDirection,
+    Camera& camera,
+    bool snapImmediately)
+{
+    if ((int)controlPoints.size() < 4)
+    {
+        return;
+    }
 
-    camera.position = cameraPosition;
+    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+    glm::vec3 flattenedForwardDirection =
+        SafeNormalize(glm::vec3(forwardDirection.x, 0.0f, forwardDirection.z), glm::vec3(0.0f, 0.0f, -1.0f));
+
+    float maxSplineT = std::max(0.0f, (float)(controlPoints.size() - 3) - 0.001f);
+    float lookAheadSplineT = std::clamp(sampledSplineT + cameraTrackLookAheadT_, 0.0f, maxSplineT);
+    glm::vec3 lookAheadTrackPosition = SampleCatmullRom(controlPoints, lookAheadSplineT);
+
+    glm::vec3 desiredCameraPosition =
+        trackCenterPosition -
+        flattenedForwardDirection * followDistance_ +
+        worldUp * followHeight_;
+
+    glm::vec3 desiredCameraTarget = lookAheadTrackPosition + worldUp * cameraAimHeight_;
+
+    if (snapImmediately || !splineCameraInitialized_)
+    {
+        camera.position = desiredCameraPosition;
+        splineCameraInitialized_ = true;
+    }
+    else
+    {
+        float followBlend = std::clamp(deltaTime * cameraFollowResponsiveness_, 0.0f, 1.0f);
+        camera.position = glm::mix(camera.position, desiredCameraPosition, followBlend);
+    }
+
+    glm::vec3 cameraLookDirection = SafeNormalize(desiredCameraTarget - camera.position, flattenedForwardDirection);
+
+    //The camera stares down the track now, not at the strafing ship, so dodge motion stops yanking it sideways//
     camera.rotation.y = glm::degrees(std::atan2(cameraLookDirection.z, cameraLookDirection.x));
-    camera.rotation.x = glm::degrees(std::asin(cameraLookDirection.y));
+    camera.rotation.x = glm::degrees(std::asin(std::clamp(cameraLookDirection.y, -1.0f, 1.0f)));
 }
 
 std::vector<glm::vec3> SplineShooterGame::CollectSplineControlPoints(Scene& scene)
@@ -469,6 +511,7 @@ void SplineShooterGame::Start(Scene& scene)
     forwardInput_ = 0.0f;
     nextBulletIndex_ = 0;
     nextObstacleIndex_ = 0;
+    splineCameraInitialized_ = false;
 
     ClearRuntimeObjects(scene);
     EnsurePlayerObject(scene); //Make sure the ship exists before the HUD starts bossing us around//
@@ -492,6 +535,7 @@ void SplineShooterGame::BeginRound(Scene& scene)
     nextBulletIndex_ = 0;
     nextObstacleIndex_ = 0;
     controlMode_ = ControlMode::SplineFollow; //Every fresh round starts on the actual assignment track, imagine that//
+    splineCameraInitialized_ = false;
 
     std::vector<glm::vec3> controlPoints = CollectSplineControlPoints(scene);
     if ((int)controlPoints.size() < 4)
@@ -512,6 +556,7 @@ void SplineShooterGame::Stop(Scene& scene)
     forwardInput_ = 0.0f;
     horizontalStrafeInput_ = 0.0f;
     verticalStrafeInput_ = 0.0f;
+    splineCameraInitialized_ = false;
 
     ClearRuntimeObjects(scene);
 }
@@ -627,7 +672,8 @@ void SplineShooterGame::UpdateSplineFollow(float deltaTime, SceneObject& playerO
     }
 
     float sampledSplineT = std::max(0.0f, std::min(splineSegmentT_, maxSplineT - 0.001f));
-    glm::vec3 playerPosition = SampleCatmullRom(controlPoints, sampledSplineT);
+    glm::vec3 trackCenterPosition = SampleCatmullRom(controlPoints, sampledSplineT);
+    glm::vec3 playerPosition = trackCenterPosition;
     glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
     glm::vec3 forwardDirection =
         SafeNormalize(TangentCatmullRom(controlPoints, sampledSplineT), glm::vec3(0.0f, 0.0f, -1.0f));
@@ -648,25 +694,7 @@ void SplineShooterGame::UpdateSplineFollow(float deltaTime, SceneObject& playerO
     playerPosition += upDirection * verticalStrafe * (laneHalfWidth_ * 0.6f);
 
     playerObject.transform.position = playerPosition;
-
-    //Flatten the chase camera so spline hills dont keep grabbing the poor thing by the face//
-    glm::vec3 flattenedForwardDirection =
-        SafeNormalize(glm::vec3(forwardDirection.x, 0.0f, forwardDirection.z), glm::vec3(0.0f, 0.0f, -1.0f));
-    glm::vec3 flattenedRightDirection =
-        SafeNormalize(glm::cross(flattenedForwardDirection, worldUp), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    const float cameraLanePeekAmount = 0.85f; //Tiny left-right lean so strafing feels alive without the camera doing parkour//
-    const float fixedSplineCameraPitch = -6.0f; //Straight-ish view that still lets you see the ship instead of just staring at space tax//
-
-    glm::vec3 cameraPosition =
-        playerPosition -
-        flattenedForwardDirection * followDistance_ +
-        worldUp * followHeight_ +
-        flattenedRightDirection * (horizontalStrafe * cameraLanePeekAmount);
-
-    camera.position = cameraPosition;
-    camera.rotation.y = glm::degrees(std::atan2(flattenedForwardDirection.z, flattenedForwardDirection.x));
-    camera.rotation.x = fixedSplineCameraPitch;
+    UpdateSplineCameraRig(deltaTime, controlPoints, sampledSplineT, trackCenterPosition, forwardDirection, camera, false);
 }
 
 void SplineShooterGame::UpdateBullets(float deltaTime, Scene& scene)

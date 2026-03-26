@@ -78,7 +78,7 @@ private:
 
     // ---- Spline Motion ----
     float splineSegmentT_ = 0.0f; //Where we currently are on the spline spaghetti//
-    float splineSpeed_ = 1.5f;
+    float splineSpeed_ = 0.75f; //Slowed this down a bunch so the ship stops speed-running the whole assignment//
     float horizontalStrafeInput_ = 0.0f;
     float verticalStrafeInput_ = 0.0f;
     float forwardInput_ = 0.0f;
@@ -89,9 +89,13 @@ private:
     float mouseSensitivity_ = 0.08f;
 
     // Camera Follow
-    float followDistance_ = 4.0f;
-    float followHeight_ = 2.0f;
+    float followDistance_ = 4.6f; //Tiny bit farther back so you can breathe and actually see the ship//
+    float followHeight_ = 2.2f; //About 10 percent more up because the old camera was a bit too clingy//
     float lookAheadDistance_ = 2.0f;
+    float cameraTrackLookAheadT_ = 0.35f; //How far ahead on the spline the camera stares so turns feel clean instead of twitchy//
+    float cameraAimHeight_ = 0.35f; //Slight aim lift so the camera looks over the ship and not directly into its skull//
+    float cameraFollowResponsiveness_ = 10.0f; //Bigger = snappier, smaller = more floaty space soap//
+    bool splineCameraInitialized_ = false;
 
     // Last Basis From Spline
     glm::vec3 forwardDirection_{0.0f, 0.0f, -1.0f};
@@ -137,6 +141,14 @@ private:
     void ClearRuntimeObjects(Scene& scene);
     SceneObject* EnsurePlayerObject(Scene& scene);
     void PlacePlayerAtTrackStart(Scene& scene, Camera& camera);
+    void UpdateSplineCameraRig(
+        float deltaTime,
+        const std::vector<glm::vec3>& controlPoints,
+        float sampledSplineT,
+        const glm::vec3& trackCenterPosition,
+        const glm::vec3& forwardDirection,
+        Camera& camera,
+        bool snapImmediately);
 
     std::vector<glm::vec3> CollectSplineControlPoints(Scene& scene);
 

@@ -52,6 +52,20 @@ static float WrapAngleDegreesSigned(float angleDegrees)
     return wrappedAngle;
 }
 
+static Light MakeSplineShooterLightPreset()
+{
+    Light splineShooterLight;
+    //This is our "space sun" basically: one chunky dramatic key light so the ship reads nicely without a whole Pixar setup//
+    splineShooterLight.position = glm::vec3(6.5f, 8.0f, 4.0f);
+    splineShooterLight.rotation = glm::vec3(-38.0f, -128.0f, 0.0f);
+    splineShooterLight.innerAngle = 18.0f;
+    splineShooterLight.outerAngle = 30.0f;
+    splineShooterLight.color = glm::vec3(1.0f, 0.97f, 0.90f);
+    splineShooterLight.intensity = 3.8f;
+    splineShooterLight.ambientStrength = 0.18f;
+    return splineShooterLight;
+}
+
 // Save current editor state
 bool EngineContext::SaveScene(const std::string& path)
 {
@@ -188,12 +202,7 @@ void EngineContext::StartGame()
         int sunIndex = scene.AddLight();
         if (sunIndex >= 0 && sunIndex < (int)scene.GetLights().size())
         {
-            auto& sunLight = scene.GetLights()[sunIndex];
-            sunLight.position = glm::vec3(6.0f, 7.0f, 3.0f);
-            sunLight.rotation = glm::vec3(-35.0f, -125.0f, 0.0f);
-            sunLight.color = glm::vec3(1.0f, 0.95f, 0.85f);
-            sunLight.intensity = 3.5f;
-            sunLight.ambientStrength = 0.18f;
+            scene.GetLights()[sunIndex] = MakeSplineShooterLightPreset();
         }
     }
 
