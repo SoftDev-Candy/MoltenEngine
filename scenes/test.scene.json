@@ -8,40 +8,41 @@
     "position": [
       0.0,
       2.200000047683716,
-      -249.08706665039063
+      -172.50039672851563
     ],
     "rotation": [
-      -12.8671236038208,
+      -13.325183868408203,
       -90.0,
       0.0
     ]
   },
   "lights": [
     {
-      "ambientStrength": 0.18000000715255737,
+      "ambientStrength": 0.44999998807907104,
       "color": [
         1.0,
-        0.9700000286102295,
-        0.8999999761581421
+        0.9800000190734863,
+        0.9300000071525574
       ],
-      "innerAngle": 18.0,
-      "intensity": 3.799999952316284,
-      "outerAngle": 30.0,
+      "innerAngle": 60.0,
+      "intensity": 2.0999999046325684,
+      "outerAngle": 88.0,
       "position": [
-        6.5,
-        8.0,
-        4.0
+        10.0,
+        16.0,
+        10.0
       ],
       "rotation": [
-        -38.0,
-        -128.0,
+        -48.0,
+        -132.0,
         0.0
-      ]
+      ],
+      "type": 2
     }
   ],
   "objects": [
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 68,
       "meshKey": "None",
       "name": "SplinePoint_0",
@@ -67,7 +68,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 69,
       "meshKey": "None",
       "name": "SplinePoint_1",
@@ -93,7 +94,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 70,
       "meshKey": "None",
       "name": "SplinePoint_2",
@@ -119,7 +120,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 71,
       "meshKey": "None",
       "name": "SplinePoint_3",
@@ -145,7 +146,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 72,
       "meshKey": "None",
       "name": "SplinePoint_4",
@@ -171,7 +172,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 73,
       "meshKey": "None",
       "name": "SplinePoint_5",
@@ -197,7 +198,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 74,
       "meshKey": "None",
       "name": "SplinePoint_6",
@@ -223,7 +224,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 75,
       "meshKey": "None",
       "name": "SplinePoint_7",
@@ -249,7 +250,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 76,
       "meshKey": "None",
       "name": "SplinePoint_8",
@@ -275,7 +276,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 77,
       "meshKey": "None",
       "name": "SplinePoint_9",
@@ -301,7 +302,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 78,
       "meshKey": "None",
       "name": "SplinePoint_10",
@@ -327,7 +328,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 79,
       "meshKey": "None",
       "name": "SplinePoint_11",
@@ -353,7 +354,7 @@
       }
     },
     {
-      "albedoKey": "None",
+      "albedoKey": "Default",
       "id": 80,
       "meshKey": "None",
       "name": "SplinePoint_12",
@@ -389,8 +390,8 @@
       "transform": {
         "position": [
           0.0,
-          0.0,
-          -254.8359375
+          -1.2000000476837158,
+          -177.9611053466797
         ],
         "rotation": [
           0.0,
@@ -409,5 +410,5 @@
     "mipmapsEnabled": true,
     "shadowsEnabled": true
   },
-  "version": 1
+  "version": 2
 }
