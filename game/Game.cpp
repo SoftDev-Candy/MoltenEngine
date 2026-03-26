@@ -15,6 +15,35 @@ static bool StartsWithPrefix(const std::string& text, const char* prefix)
     return text.rfind(prefix, 0) == 0;
 }
 
+static float FractionalPart(float numberValue)
+{
+    return numberValue - std::floor(numberValue);
+}
+
+static float StableNoise01(int indexValue, int saltValue)
+{
+    //Fake random but deterministic, so the asteroid soup stays consistent instead of shuffling every launch like a goblin//
+    float weirdSeed = std::sin((float)(indexValue * 127 + saltValue * 53)) * 43758.5453f;
+    return FractionalPart(weirdSeed);
+}
+
+static int PickLaneIndex(int indexValue, int saltValue)
+{
+    float laneNoise = StableNoise01(indexValue, saltValue);
+
+    if (laneNoise < 0.3333f)
+    {
+        return -1;
+    }
+
+    if (laneNoise < 0.6666f)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
 static bool TextureSlotHasRealKey(const std::string& textureKey)
 {
     return !textureKey.empty() && textureKey != "None";
@@ -158,6 +187,42 @@ void SplineShooterGame::SetSecondaryAsteroidMesh(Mesh* asteroidMesh, const std::
     //Second rock buddy goes here so obstacle waves dont look like the same space potato copy-pasted forever//
     secondaryAsteroidMesh_ = asteroidMesh;
     secondaryAsteroidMeshKey_ = asteroidMeshKey;
+}
+
+void SplineShooterGame::SetPrimaryAsteroidMaterial(
+    Texture* colorTexture,
+    const std::string& colorTextureKey,
+    Texture* specularTexture,
+    const std::string& specularTextureKey)
+{
+    primaryAsteroidColorTexture_ = colorTexture;
+    primaryAsteroidColorTextureKey_ = colorTextureKey;
+    primaryAsteroidSpecularTexture_ = specularTexture;
+    primaryAsteroidSpecularTextureKey_ = specularTextureKey;
+}
+
+void SplineShooterGame::SetSecondaryAsteroidMaterial(
+    Texture* colorTexture,
+    const std::string& colorTextureKey,
+    Texture* specularTexture,
+    const std::string& specularTextureKey)
+{
+    secondaryAsteroidColorTexture_ = colorTexture;
+    secondaryAsteroidColorTextureKey_ = colorTextureKey;
+    secondaryAsteroidSpecularTexture_ = specularTexture;
+    secondaryAsteroidSpecularTextureKey_ = specularTextureKey;
+}
+
+void SplineShooterGame::SetBulletVisual(
+    Mesh* bulletMesh,
+    const std::string& bulletMeshKey,
+    Texture* bulletTexture,
+    const std::string& bulletTextureKey)
+{
+    bulletMesh_ = bulletMesh;
+    bulletMeshKey_ = bulletMeshKey;
+    bulletTexture_ = bulletTexture;
+    bulletTextureKey_ = bulletTextureKey;
 }
 
 SceneObject* SplineShooterGame::FindObjectByName(Scene& scene, const std::string& objectName)
@@ -315,6 +380,55 @@ void SplineShooterGame::PlacePlayerAtTrackStart(Scene& scene, Camera& camera)
 
     playerObject->transform.position = playerPosition;
     UpdateSplineCameraRig(0.0f, controlPoints, 0.0f, trackCenterPosition, forwardDirection, camera, true);
+}
+
+void SplineShooterGame::ApplyAsteroidVisual(SceneObject& asteroidObject, bool useSecondaryVariant)
+{
+    Mesh* resolvedAsteroidMesh = asteroidMesh_ ? asteroidMesh_ : cubeMesh_;
+    std::string resolvedAsteroidMeshKey = asteroidMesh_ ? asteroidMeshKey_ : "Cube";
+    Texture* resolvedColorTexture = primaryAsteroidColorTexture_ ? primaryAsteroidColorTexture_ : defaultTexture_;
+    std::string resolvedColorTextureKey = primaryAsteroidColorTexture_ ? primaryAsteroidColorTextureKey_ : "Default";
+    Texture* resolvedSpecularTexture = primaryAsteroidSpecularTexture_ ? primaryAsteroidSpecularTexture_ : resolvedColorTexture;
+    std::string resolvedSpecularTextureKey = primaryAsteroidSpecularTexture_ ? primaryAsteroidSpecularTextureKey_ : resolvedColorTextureKey;
+    float resolvedShininess = 22.0f;
+    glm::vec3 resolvedScale = glm::vec3(0.68f);
+
+    if (useSecondaryVariant)
+    {
+        if (secondaryAsteroidMesh_ != nullptr)
+        {
+            resolvedAsteroidMesh = secondaryAsteroidMesh_;
+            resolvedAsteroidMeshKey = secondaryAsteroidMeshKey_;
+        }
+
+        if (secondaryAsteroidColorTexture_ != nullptr)
+        {
+            resolvedColorTexture = secondaryAsteroidColorTexture_;
+            resolvedColorTextureKey = secondaryAsteroidColorTextureKey_;
+        }
+
+        resolvedSpecularTexture =
+            secondaryAsteroidSpecularTexture_ != nullptr
+                ? secondaryAsteroidSpecularTexture_
+                : resolvedColorTexture;
+        resolvedSpecularTextureKey =
+            secondaryAsteroidSpecularTexture_ != nullptr
+                ? secondaryAsteroidSpecularTextureKey_
+                : resolvedColorTextureKey;
+        resolvedShininess = 34.0f;
+        resolvedScale = glm::vec3(0.58f);
+    }
+
+    asteroidObject.mesh.mesh = resolvedAsteroidMesh;
+    asteroidObject.meshKey = resolvedAsteroidMeshKey;
+    asteroidObject.texture = resolvedColorTexture;
+    asteroidObject.textureKey = resolvedColorTextureKey;
+    asteroidObject.albedo = resolvedColorTexture;
+    asteroidObject.albedoKey = resolvedColorTextureKey;
+    asteroidObject.specular = resolvedSpecularTexture;
+    asteroidObject.specularKey = resolvedSpecularTextureKey;
+    asteroidObject.shininess = resolvedShininess;
+    asteroidObject.transform.scale = resolvedScale;
 }
 
 void SplineShooterGame::UpdateSplineCameraRig(
@@ -476,32 +590,21 @@ void SplineShooterGame::SpawnObstacles(Scene& scene, const std::vector<glm::vec3
         return;
     }
 
-    //Spawn some chunky space pebbles along the spline so the player has homework to shoot//
-    for (float splineT = 0.8f; splineT < maxSplineT - 0.15f; splineT += 0.7f)
+    const float obstacleSpacing = 0.46f;
+    const float extraSpawnOffset = 0.17f;
+    const float horizontalLaneDistance = 1.35f;
+    const float verticalLaneDistance = 0.92f;
+    const float tableAsteroidRightNudge = 0.45f;
+
+    auto spawnObstacleAt = [&](float splineT, int patternSalt, bool forceTopOrBottom)
     {
         scene.CreateObject();
         auto& obstacleObject = scene.GetObjects().back();
         int obstacleNumber = nextObstacleIndex_++;
-
-        Mesh* resolvedAsteroidMesh = asteroidMesh_ ? asteroidMesh_ : cubeMesh_;
-        std::string resolvedAsteroidMeshKey = asteroidMesh_ ? asteroidMeshKey_ : "Cube";
-        if ((obstacleNumber % 2) == 1 && secondaryAsteroidMesh_ != nullptr)
-        {
-            resolvedAsteroidMesh = secondaryAsteroidMesh_;
-            resolvedAsteroidMeshKey = secondaryAsteroidMeshKey_;
-        }
+        bool useSecondaryVariant = ((obstacleNumber % 2) == 1);
 
         obstacleObject.name = "Obstacle_" + std::to_string(obstacleNumber);
-        obstacleObject.mesh.mesh = resolvedAsteroidMesh;
-        obstacleObject.meshKey = resolvedAsteroidMeshKey;
-
-        obstacleObject.texture = defaultTexture_;
-        obstacleObject.textureKey = "Default";
-        obstacleObject.albedo = defaultTexture_;
-        obstacleObject.albedoKey = "Default";
-        obstacleObject.specular = defaultTexture_;
-        obstacleObject.specularKey = "Default";
-        obstacleObject.shininess = 24.0f;
+        ApplyAsteroidVisual(obstacleObject, useSecondaryVariant);
 
         glm::vec3 obstaclePosition = SampleCatmullRom(controlPoints, splineT);
         glm::vec3 obstacleForwardDirection =
@@ -511,17 +614,50 @@ void SplineShooterGame::SpawnObstacles(Scene& scene, const std::vector<glm::vec3
         glm::vec3 obstacleUpDirection =
             SafeNormalize(glm::cross(obstacleRightDirection, obstacleForwardDirection), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        float laneOffset = (float)((obstacleNumber % 3) - 1) * 1.4f;
-        float verticalOffset = ((obstacleNumber % 2) == 0) ? 0.0f : 0.45f;
+        int horizontalLaneIndex = PickLaneIndex(obstacleNumber, patternSalt + 3);
+        int verticalLaneIndex = PickLaneIndex(obstacleNumber, patternSalt + 11);
+
+        if (forceTopOrBottom && verticalLaneIndex == 0)
+        {
+            verticalLaneIndex = StableNoise01(obstacleNumber, patternSalt + 17) > 0.5f ? 1 : -1;
+        }
+
+        float laneOffset = (float)horizontalLaneIndex * horizontalLaneDistance;
+        float verticalOffset = (float)verticalLaneIndex * verticalLaneDistance;
+
+        if (useSecondaryVariant)
+        {
+            //Table-texture rock gets nudged right a smidge so it stops camping dead-center all the time//
+            laneOffset += tableAsteroidRightNudge;
+        }
 
         obstaclePosition += obstacleRightDirection * laneOffset;
         obstaclePosition += obstacleUpDirection * verticalOffset;
 
         obstacleObject.transform.position = obstaclePosition;
         obstacleObject.transform.rotation.y = (float)(obstacleNumber * 37);
-        obstacleObject.transform.scale = glm::vec3(0.6f);
+        activeObstacles_.push_back({
+            obstacleObject.entity,
+            useSecondaryVariant ? 0.52f : 0.62f,
+            useSecondaryVariant ? 1 : 2,
+            useSecondaryVariant ? secondaryAsteroidContactDamage_ : primaryAsteroidContactDamage_ });
+    };
 
-        activeObstacles_.push_back({ obstacleObject.entity, 0.6f, 2 });
+    //Spawn more chunky space pebbles now, including some top and bottom jerks so vertical dodging finally matters//
+    int spawnBandIndex = 0;
+    for (float splineT = 0.72f; splineT < maxSplineT - 0.15f; splineT += obstacleSpacing, ++spawnBandIndex)
+    {
+        bool mainSpawnWantsVerticalLane = StableNoise01(spawnBandIndex, 21) > 0.58f;
+        spawnObstacleAt(splineT, spawnBandIndex * 5, mainSpawnWantsVerticalLane);
+
+        if (StableNoise01(spawnBandIndex, 37) > 0.42f)
+        {
+            float extraSplineT = splineT + extraSpawnOffset;
+            if (extraSplineT < maxSplineT - 0.12f)
+            {
+                spawnObstacleAt(extraSplineT, spawnBandIndex * 7 + 19, true);
+            }
+        }
     }
 }
 
@@ -599,7 +735,12 @@ void SplineShooterGame::Stop(Scene& scene)
 
 void SplineShooterGame::Shoot(Scene& scene)
 {
-    if (!running_ || state_ != GameState::Playing || cubeMesh_ == nullptr)
+    Mesh* resolvedBulletMesh = bulletMesh_ ? bulletMesh_ : cubeMesh_;
+    Texture* resolvedBulletTexture = bulletTexture_ ? bulletTexture_ : defaultTexture_;
+    std::string resolvedBulletMeshKey = bulletMesh_ ? bulletMeshKey_ : "Cube";
+    std::string resolvedBulletTextureKey = bulletTexture_ ? bulletTextureKey_ : "Default";
+
+    if (!running_ || state_ != GameState::Playing || resolvedBulletMesh == nullptr)
     {
         return;
     }
@@ -619,25 +760,25 @@ void SplineShooterGame::Shoot(Scene& scene)
     auto& bulletObject = scene.GetObjects().back();
     int bulletNumber = nextBulletIndex_++;
 
-    //Bullet is just a baby cube for now and honestly that is good enough for this chaos engine//
+    //Bullet is round-ish now so it stops looking like we are firing tiny angry bricks//
     bulletObject.name = "Bullet_" + std::to_string(bulletNumber);
-    bulletObject.mesh.mesh = cubeMesh_;
-    bulletObject.meshKey = "Cube";
+    bulletObject.mesh.mesh = resolvedBulletMesh;
+    bulletObject.meshKey = resolvedBulletMeshKey;
 
-    bulletObject.texture = defaultTexture_;
-    bulletObject.textureKey = "Default";
-    bulletObject.albedo = defaultTexture_;
-    bulletObject.albedoKey = "Default";
-    bulletObject.specular = defaultTexture_;
-    bulletObject.specularKey = "Default";
-    bulletObject.shininess = 8.0f;
+    bulletObject.texture = resolvedBulletTexture;
+    bulletObject.textureKey = resolvedBulletTextureKey;
+    bulletObject.albedo = resolvedBulletTexture;
+    bulletObject.albedoKey = resolvedBulletTextureKey;
+    bulletObject.specular = resolvedBulletTexture;
+    bulletObject.specularKey = resolvedBulletTextureKey;
+    bulletObject.shininess = 20.0f;
 
-    bulletObject.transform.scale = glm::vec3(0.12f);
+    bulletObject.transform.scale = glm::vec3(0.09f);
     bulletObject.transform.position = playerObject->transform.position + forwardDirection_ * 0.7f;
 
     Bullet newBullet;
     newBullet.entity = bulletObject.entity;
-    newBullet.velocity = forwardDirection_ * 16.0f;
+    newBullet.velocity = forwardDirection_ * 30.0f; //Bit faster again so shooting feels punchy even after slowing the ship down a ton//
     newBullet.remainingLife = 2.0f;
     newBullet.radius = 0.15f;
 
@@ -786,7 +927,7 @@ void SplineShooterGame::CheckCollisions(Scene& scene)
         float distanceToObstacle = DistanceBetween(playerObject->transform.position, obstacleObject->transform.position);
         if (distanceToObstacle < (0.45f + activeObstacles_[obstacleIndex].radius))
         {
-            health_ -= 1;
+            health_ -= activeObstacles_[obstacleIndex].contactDamage;
             DestroyObjectByEntity(scene, activeObstacles_[obstacleIndex].entity);
             activeObstacles_.erase(activeObstacles_.begin() + obstacleIndex);
 

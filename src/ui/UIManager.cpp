@@ -269,18 +269,46 @@ static glm::vec3 GetSceneGizmoAnchor(const SceneObject& sceneObject)
     return sceneObject.transform.position + worldUp * (topOffset + extraPadding);
 }
 
-static Light MakeSplineShooterLightPreset()
+static Light MakeSceneSunLightPreset()
 {
-    Light splineShooterLight;
-    //Not really "sunlight" sunlight, more like a nice dramatic key light so the ship stops looking like a potato in space//
-    splineShooterLight.position = glm::vec3(6.5f, 8.0f, 4.0f);
-    splineShooterLight.rotation = glm::vec3(-38.0f, -128.0f, 0.0f);
-    splineShooterLight.innerAngle = 18.0f;
-    splineShooterLight.outerAngle = 30.0f;
-    splineShooterLight.color = glm::vec3(1.0f, 0.97f, 0.90f);
-    splineShooterLight.intensity = 3.8f;
-    splineShooterLight.ambientStrength = 0.18f;
-    return splineShooterLight;
+    Light sceneSunLight;
+    sceneSunLight.type = LightType::Directional;
+    sceneSunLight.position = glm::vec3(10.0f, 16.0f, 10.0f);
+    sceneSunLight.rotation = glm::vec3(-48.0f, -132.0f, 0.0f);
+    sceneSunLight.innerAngle = 60.0f;
+    sceneSunLight.outerAngle = 88.0f;
+    sceneSunLight.color = glm::vec3(1.0f, 0.98f, 0.93f);
+    sceneSunLight.intensity = 2.1f;
+    sceneSunLight.ambientStrength = 0.45f;
+    return sceneSunLight;
+}
+
+static Light MakePointLightPreset()
+{
+    Light pointLight;
+    pointLight.type = LightType::Point;
+    pointLight.position = glm::vec3(0.0f, 3.0f, 0.0f);
+    pointLight.rotation = glm::vec3(0.0f, -90.0f, 0.0f);
+    pointLight.innerAngle = 20.0f;
+    pointLight.outerAngle = 40.0f;
+    pointLight.color = glm::vec3(1.0f, 0.94f, 0.86f);
+    pointLight.intensity = 4.0f;
+    pointLight.ambientStrength = 0.10f;
+    return pointLight;
+}
+
+static Light MakeSpotLightPreset()
+{
+    Light spotLight;
+    spotLight.type = LightType::Spot;
+    spotLight.position = glm::vec3(4.0f, 6.0f, 4.0f);
+    spotLight.rotation = glm::vec3(-40.0f, -135.0f, 0.0f);
+    spotLight.innerAngle = 26.0f;
+    spotLight.outerAngle = 42.0f;
+    spotLight.color = glm::vec3(1.0f, 0.96f, 0.90f);
+    spotLight.intensity = 5.0f;
+    spotLight.ambientStrength = 0.14f;
+    return spotLight;
 }
 
 void UIManager::Draw(Scene& scene, Camera& camera, int& selectedIndex,
@@ -745,11 +773,29 @@ if (ImGui::Button("+ Add Light"))
 }
 ImGui::SameLine();
 
-if (ImGui::Button("+ Spline Game Light"))
+if (ImGui::Button("+ Scene Light"))
 {
     int newLightIndex = (int)lights.size();
     pushMessage(std::make_unique<AddLightMessage>());
-    pushMessage(std::make_unique<UpdateLightMessage>(newLightIndex, MakeSplineShooterLightPreset()));
+    pushMessage(std::make_unique<UpdateLightMessage>(newLightIndex, MakeSceneSunLightPreset()));
+    selectedLight = newLightIndex;
+}
+ImGui::SameLine();
+
+if (ImGui::Button("+ Point Light"))
+{
+    int newLightIndex = (int)lights.size();
+    pushMessage(std::make_unique<AddLightMessage>());
+    pushMessage(std::make_unique<UpdateLightMessage>(newLightIndex, MakePointLightPreset()));
+    selectedLight = newLightIndex;
+}
+ImGui::SameLine();
+
+if (ImGui::Button("+ Spot Light"))
+{
+    int newLightIndex = (int)lights.size();
+    pushMessage(std::make_unique<AddLightMessage>());
+    pushMessage(std::make_unique<UpdateLightMessage>(newLightIndex, MakeSpotLightPreset()));
     selectedLight = newLightIndex;
 }
 ImGui::SameLine();
@@ -792,27 +838,63 @@ else
         Light edited = lights[selectedLight];
         bool changed = false;
 
-        if (ImGui::Button("Apply Spline Shooter Preset"))
+        if (ImGui::Button("Apply Scene Sun Preset"))
         {
-            edited = MakeSplineShooterLightPreset();
+            edited = MakeSceneSunLightPreset();
+            changed = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Apply Point Preset"))
+        {
+            edited = MakePointLightPreset();
+            changed = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Apply Spot Preset"))
+        {
+            edited = MakeSpotLightPreset();
             changed = true;
         }
 
         ImGui::Separator();
-        ImGui::TextDisabled("In Play, light 0 follows behind the player so the obstacles fade into view.");
+
+        const char* lightTypeLabels[] = { "Spot", "Point", "Directional" };
+        int lightTypeIndex = (int)edited.type;
+        if (ImGui::Combo("Type", &lightTypeIndex, lightTypeLabels, IM_ARRAYSIZE(lightTypeLabels)))
+        {
+            edited.type = (LightType)lightTypeIndex;
+            changed = true;
+        }
 
         changed |= ImGui::DragFloat3("Position", &edited.position.x, 0.05f);
-        changed |= ImGui::DragFloat3("Rotation", &edited.rotation.x, 0.5f);
-        changed |= ImGui::SliderFloat("Inner Angle", &edited.innerAngle, 1.0f, 60.0f);
-        changed |= ImGui::SliderFloat("Outer Angle", &edited.outerAngle, 1.0f, 80.0f);
-        if (edited.outerAngle < edited.innerAngle) edited.outerAngle = edited.innerAngle;
+        if (edited.type != LightType::Point)
+        {
+            changed |= ImGui::DragFloat3("Rotation", &edited.rotation.x, 0.5f);
+        }
+        else
+        {
+            ImGui::TextDisabled("Point light ignores rotation because it shines everywhere like an attention seeker.");
+        }
 
+        if (edited.type == LightType::Spot)
+        {
+            changed |= ImGui::SliderFloat("Inner Angle", &edited.innerAngle, 1.0f, 60.0f);
+            changed |= ImGui::SliderFloat("Outer Angle", &edited.outerAngle, 1.0f, 80.0f);
+            if (edited.outerAngle < edited.innerAngle) edited.outerAngle = edited.innerAngle;
+        }
+        else if (edited.type == LightType::Directional)
+        {
+            ImGui::TextDisabled("Directional light uses rotation as sun direction and mostly ignores cone angles.");
+        }
+        else
+        {
+            ImGui::TextDisabled("Point light uses position + falloff, no spotlight cone nonsense needed.");
+        }
 
         changed |= ImGui::ColorEdit3("Color", &edited.color.x);
-        changed |= ImGui::SliderFloat("Intensity", &edited.intensity, 0.0f, 10.0f);
+        changed |= ImGui::SliderFloat("Intensity", &edited.intensity, 0.0f, 12.0f);
         changed |= ImGui::SliderFloat("Ambient", &edited.ambientStrength, 0.0f, 1.0f);
 
-        ImGui::TextDisabled("Space shooters do not need literal sunlight, just one good dramatic light.");
 
         if (changed)
         {
@@ -1521,4 +1603,3 @@ void UIManager::LoadSaveSceneUI(std::function<void(std::unique_ptr<Message>)> pu
     }
 
 }
-

@@ -145,8 +145,6 @@ private:
     bool stopGameKeyWasDown_ = false;
     int playFollowLightIndex_ = -1;
     bool playFollowLightAdded_ = false;
-    bool playFollowLightHadOriginal_ = false;
-    Light cachedPlayFollowLight_{};
 
     float mouseSensitivity = 0.12f;   // tweak
     float pitchClamp = 89.0f;

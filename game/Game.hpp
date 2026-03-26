@@ -59,6 +59,21 @@ public:
     void SetPlayerShipMesh(Mesh* playerShipMesh, const std::string& playerShipMeshKey);
     void SetAsteroidMesh(Mesh* asteroidMesh, const std::string& asteroidMeshKey);
     void SetSecondaryAsteroidMesh(Mesh* asteroidMesh, const std::string& asteroidMeshKey);
+    void SetPrimaryAsteroidMaterial(
+        Texture* colorTexture,
+        const std::string& colorTextureKey,
+        Texture* specularTexture,
+        const std::string& specularTextureKey);
+    void SetSecondaryAsteroidMaterial(
+        Texture* colorTexture,
+        const std::string& colorTextureKey,
+        Texture* specularTexture,
+        const std::string& specularTextureKey);
+    void SetBulletVisual(
+        Mesh* bulletMesh,
+        const std::string& bulletMeshKey,
+        Texture* bulletTexture,
+        const std::string& bulletTextureKey);
     void SetPreferredPlayerMeshKey(const std::string& preferredPlayerMeshKey)
     {
         preferredPlayerMeshKey_ = preferredPlayerMeshKey;
@@ -117,12 +132,12 @@ private:
 
     // ---- Spline Motion ----
     float splineSegmentT_ = 0.0f; //Where we currently are on the spline spaghetti//
-    float splineSpeed_ = 0.75f; //Slowed this down a bunch so the ship stops speed-running the whole assignment//
+    float splineSpeed_ = 0.40f; //Way slower now because the ship was absolutely hauling butt down the spline//
     float horizontalStrafeInput_ = 0.0f;
     float verticalStrafeInput_ = 0.0f;
     float forwardInput_ = 0.0f;
     float laneHalfWidth_ = 2.0f;
-    float moveSpeed_ = 6.0f;
+    float moveSpeed_ = 4.2f;
     float yaw_ = -90.0f;
     float pitch_ = 0.0f;
     float mouseSensitivity_ = 0.08f;
@@ -152,11 +167,25 @@ private:
     Mesh* playerShipMesh_ = nullptr;
     Mesh* asteroidMesh_ = nullptr;
     Mesh* secondaryAsteroidMesh_ = nullptr;
+    Texture* primaryAsteroidColorTexture_ = nullptr;
+    Texture* primaryAsteroidSpecularTexture_ = nullptr;
+    Texture* secondaryAsteroidColorTexture_ = nullptr;
+    Texture* secondaryAsteroidSpecularTexture_ = nullptr;
+    Mesh* bulletMesh_ = nullptr;
+    Texture* bulletTexture_ = nullptr;
     std::string playerShipMeshKey_ = "Cube"; //Actual thing we ended up using after all the fallback nonsense//
     std::string preferredPlayerMeshKey_ = "D5Class"; //What we WANT if the mesh goblins actually loaded it//
     std::string asteroidMeshKey_ = "Cube";
     std::string secondaryAsteroidMeshKey_ = "Cube";
     std::string preferredAsteroidMeshKey_ = "Asteroid_1d";
+    std::string primaryAsteroidColorTextureKey_ = "Default";
+    std::string primaryAsteroidSpecularTextureKey_ = "Default";
+    std::string secondaryAsteroidColorTextureKey_ = "Default";
+    std::string secondaryAsteroidSpecularTextureKey_ = "Default";
+    std::string bulletMeshKey_ = "Cube";
+    std::string bulletTextureKey_ = "Default";
+    int primaryAsteroidContactDamage_ = 2;
+    int secondaryAsteroidContactDamage_ = 1;
 
     // ---- Bullets & Obstacles ----
     struct Bullet
@@ -172,6 +201,7 @@ private:
         Entity entity;
         float radius = 0.45f;
         int hitPoints = 2;
+        int contactDamage = 1;
     };
 
     std::vector<Bullet> activeBullets_;
@@ -187,6 +217,7 @@ private:
     void ClearRuntimeObjects(Scene& scene);
     SceneObject* EnsurePlayerObject(Scene& scene);
     void PlacePlayerAtTrackStart(Scene& scene, Camera& camera);
+    void ApplyAsteroidVisual(SceneObject& asteroidObject, bool useSecondaryVariant);
     void UpdateSplineCameraRig(
         float deltaTime,
         const std::vector<glm::vec3>& controlPoints,

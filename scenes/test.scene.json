@@ -1,23 +1,18 @@
 {
   "assets": {
     "meshes": [],
-    "textures": [
-      {
-        "key": "Viking_House",
-        "path": "../assets/Viking_House.png"
-      }
-    ]
+    "textures": []
   },
   "camera": {
     "fov": 45.0,
     "position": [
-      0.005507817491889,
-      4.299208641052246,
-      -157.02435302734375
+      0.0,
+      2.200000047683716,
+      -249.08706665039063
     ],
     "rotation": [
-      -17.5783748626709,
-      -90.05237579345703,
+      -12.8671236038208,
+      -90.0,
       0.0
     ]
   },
@@ -46,34 +41,8 @@
   ],
   "objects": [
     {
-      "albedoKey": "Viking_House",
-      "id": 8,
-      "meshKey": "ImportedOBJ",
-      "name": "Player",
-      "shininess": 64.0,
-      "specularKey": "Default",
-      "textureKey": "Viking_House",
-      "transform": {
-        "position": [
-          0.00014019012451171875,
-          2.089081048965454,
-          -162.89590454101563
-        ],
-        "rotation": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          0.3499999940395355,
-          0.3499999940395355,
-          0.3499999940395355
-        ]
-      }
-    },
-    {
-      "albedoKey": "Default",
-      "id": 33,
+      "albedoKey": "None",
+      "id": 68,
       "meshKey": "None",
       "name": "SplinePoint_0",
       "shininess": 32.0,
@@ -99,7 +68,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 40,
+      "id": 69,
       "meshKey": "None",
       "name": "SplinePoint_1",
       "shininess": 32.0,
@@ -109,7 +78,7 @@
         "position": [
           0.0,
           0.0,
-          -6.359021186828613
+          -26.998764038085938
         ],
         "rotation": [
           0.0,
@@ -125,7 +94,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 41,
+      "id": 70,
       "meshKey": "None",
       "name": "SplinePoint_2",
       "shininess": 32.0,
@@ -135,7 +104,7 @@
         "position": [
           0.0,
           0.0,
-          -14.601522445678711
+          -48.36063766479492
         ],
         "rotation": [
           0.0,
@@ -151,7 +120,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 42,
+      "id": 71,
       "meshKey": "None",
       "name": "SplinePoint_3",
       "shininess": 32.0,
@@ -161,7 +130,7 @@
         "position": [
           0.0,
           0.0,
-          -24.986507415771484
+          -61.29258346557617
         ],
         "rotation": [
           0.0,
@@ -177,7 +146,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 43,
+      "id": 72,
       "meshKey": "None",
       "name": "SplinePoint_4",
       "shininess": 32.0,
@@ -187,7 +156,7 @@
         "position": [
           0.0,
           0.0,
-          -36.157447814941406
+          -87.20856475830078
         ],
         "rotation": [
           0.0,
@@ -203,7 +172,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 44,
+      "id": 73,
       "meshKey": "None",
       "name": "SplinePoint_5",
       "shininess": 32.0,
@@ -213,7 +182,7 @@
         "position": [
           0.0,
           0.0,
-          -46.784603118896484
+          -107.59044647216797
         ],
         "rotation": [
           0.0,
@@ -229,7 +198,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 45,
+      "id": 74,
       "meshKey": "None",
       "name": "SplinePoint_6",
       "shininess": 32.0,
@@ -237,9 +206,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          -2.703464984893799,
           0.0,
-          -57.16331481933594
+          0.0,
+          -138.57785034179688
         ],
         "rotation": [
           0.0,
@@ -255,7 +224,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 46,
+      "id": 75,
       "meshKey": "None",
       "name": "SplinePoint_7",
       "shininess": 32.0,
@@ -263,9 +232,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          2.046980619430542,
-          0.8887374401092529,
-          -79.82310485839844
+          0.0,
+          0.0,
+          -172.7417449951172
         ],
         "rotation": [
           0.0,
@@ -281,7 +250,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 47,
+      "id": 76,
       "meshKey": "None",
       "name": "SplinePoint_8",
       "shininess": 32.0,
@@ -289,9 +258,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          2.4160428047180176,
-          0.24029064178466797,
-          -96.30290985107422
+          0.0,
+          0.0,
+          -194.16387939453125
         ],
         "rotation": [
           0.0,
@@ -307,7 +276,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 48,
+      "id": 77,
       "meshKey": "None",
       "name": "SplinePoint_9",
       "shininess": 32.0,
@@ -315,9 +284,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          0.5947982668876648,
-          2.3420844078063965,
-          -109.76468658447266
+          0.0,
+          0.0,
+          -216.92906188964844
         ],
         "rotation": [
           0.0,
@@ -333,7 +302,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 49,
+      "id": 78,
       "meshKey": "None",
       "name": "SplinePoint_10",
       "shininess": 32.0,
@@ -342,8 +311,8 @@
       "transform": {
         "position": [
           0.0,
-          3.309598445892334,
-          -120.0364761352539
+          0.0,
+          -234.54200744628906
         ],
         "rotation": [
           0.0,
@@ -359,7 +328,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 50,
+      "id": 79,
       "meshKey": "None",
       "name": "SplinePoint_11",
       "shininess": 32.0,
@@ -367,9 +336,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          3.538407802581787,
-          1.6235450506210327,
-          -134.19956970214844
+          0.0,
+          0.0,
+          -254.85443115234375
         ],
         "rotation": [
           0.0,
@@ -385,7 +354,7 @@
     },
     {
       "albedoKey": "None",
-      "id": 51,
+      "id": 80,
       "meshKey": "None",
       "name": "SplinePoint_12",
       "shininess": 32.0,
@@ -393,9 +362,9 @@
       "textureKey": "Default",
       "transform": {
         "position": [
-          0.28295016288757324,
-          3.045013189315796,
-          -145.2420654296875
+          0.0,
+          0.0,
+          -271.4868469238281
         ],
         "rotation": [
           0.0,
@@ -410,18 +379,18 @@
       }
     },
     {
-      "albedoKey": "None",
-      "id": 52,
-      "meshKey": "None",
-      "name": "SplinePoint_13",
-      "shininess": 32.0,
-      "specularKey": "None",
+      "albedoKey": "Default",
+      "id": 81,
+      "meshKey": "ImportedOBJ",
+      "name": "Player",
+      "shininess": 64.0,
+      "specularKey": "Default",
       "textureKey": "Default",
       "transform": {
         "position": [
           0.0,
-          2.0893731117248535,
-          -162.9167022705078
+          0.0,
+          -254.8359375
         ],
         "rotation": [
           0.0,
@@ -429,35 +398,9 @@
           0.0
         ],
         "scale": [
-          1.0,
-          1.0,
-          1.0
-        ]
-      }
-    },
-    {
-      "albedoKey": "None",
-      "id": 53,
-      "meshKey": "None",
-      "name": "SplinePoint_14",
-      "shininess": 32.0,
-      "specularKey": "None",
-      "textureKey": "Default",
-      "transform": {
-        "position": [
-          0.0,
-          3.635688304901123,
-          -186.80810546875
-        ],
-        "rotation": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          1.0,
-          1.0,
-          1.0
+          0.3499999940395355,
+          0.3499999940395355,
+          0.3499999940395355
         ]
       }
     }

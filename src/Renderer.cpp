@@ -24,7 +24,7 @@ void Renderer::Begin()
 
     InitShadowResources();
 
-    glClearColor(.12f,0.13f,0.17f,1.0f); //The colour we want to give to the screen
+    glClearColor(0.12f, 0.13f, 0.17f, 1.0f); //Back to the friendly grey-blue because pure darkness was not helping anybody
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);//Clearing the buffer to get the colour out.
 }
 
@@ -41,13 +41,22 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
     // -----------------------------
     auto& lights = scene.GetLights();
     glm::vec3 shadowLightPos = glm::vec3(2.0f, 3.0f, 2.0f);
+    glm::vec3 shadowLightDir = glm::normalize(glm::vec3(0.0f, -0.6f, -1.0f));
     if (!lights.empty())
     {
         shadowLightPos = lights[0].position;
+
+        glm::vec3 rotationRadians = glm::radians(lights[0].rotation);
+        glm::mat4 rotationMatrix(1.0f);
+        rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.x, glm::vec3(1,0,0));
+        rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.y, glm::vec3(0,1,0));
+        rotationMatrix = glm::rotate(rotationMatrix, rotationRadians.z, glm::vec3(0,0,1));
+        shadowLightDir = glm::normalize(glm::vec3(rotationMatrix * glm::vec4(0,0,-1,0)));
     }
 
-    glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 50.0f);
-    glm::mat4 lightView = glm::lookAt(shadowLightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+    glm::vec3 shadowLightTarget = shadowLightPos + shadowLightDir * 18.0f;
+    glm::mat4 lightProj = glm::ortho(-18.0f, 18.0f, -18.0f, 18.0f, 0.1f, 80.0f);
+    glm::mat4 lightView = glm::lookAt(shadowLightPos, shadowLightTarget, glm::vec3(0, 1, 0));
     glm::mat4 lightSpace = lightProj * lightView;
 
     if (shadowsEnabled && depthShader != nullptr)
@@ -109,6 +118,7 @@ void Renderer::RenderScene(Scene &scene , Camera& cam)
             shaderptr->setVec3(std::string("uLightColor[") + std::to_string(lightIndex) + "]", light.color);
             shaderptr->setFloat(std::string("uLightIntensity[") + std::to_string(lightIndex) + "]", light.intensity);
             shaderptr->setFloat(std::string("uLightAmbient[") + std::to_string(lightIndex) + "]", light.ambientStrength);
+            shaderptr->setInt(std::string("uLightType[") + std::to_string(lightIndex) + "]", (int)light.type);
 
             glm::vec3 rotationRadians = glm::radians(light.rotation);
             glm::mat4 rotationMatrix(1.0f);

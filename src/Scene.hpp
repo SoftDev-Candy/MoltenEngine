@@ -12,8 +12,16 @@
 
 class Texture;//Forward declare it again !
 
+enum class LightType
+{
+    Spot = 0,
+    Point = 1,
+    Directional = 2
+};
+
 struct Light
 {
+    LightType type = LightType::Spot;
     glm::vec3 position{ 2.0f, 3.0f, 2.0f };
     glm::vec3 rotation{0.0f, -90.0f, 0.0f}; // degrees (pitch,yaw,roll)
     float innerAngle = 12.0f;  // degrees

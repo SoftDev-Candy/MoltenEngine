@@ -86,6 +86,7 @@ uniform vec3  uLightColor[MAX_LIGHTS];
 uniform float uLightIntensity[MAX_LIGHTS];
 uniform float uLightAmbient[MAX_LIGHTS];
 uniform vec3  uLightDir[MAX_LIGHTS];
+uniform int   uLightType[MAX_LIGHTS];
 uniform float uLightInnerCos[MAX_LIGHTS];
 uniform float uLightOuterCos[MAX_LIGHTS];
 
@@ -138,13 +139,31 @@ void main()
 
     for (int i = 0; i < count; ++i)
     {
-        // --- distance attenuation (THIS is the missing piece) ---
-        vec3  lightVec = uLightPos[i] - vWorldPos;
-        float dist     = length(lightVec);
-        vec3  L        = normalize(lightVec);
+        vec3 L = vec3(0.0);
+        float atten = 1.0;
+        float spot = 1.0;
+        int lightType = uLightType[i];
 
-        // classic attenuation curve (tweak constants if you want)
-        float atten = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+        if (lightType == 2)
+        {
+            //Directional light: behaves like scene sunlight and ignores distance entirely//
+            L = normalize(-uLightDir[i]);
+        }
+        else
+        {
+            vec3 lightVec = uLightPos[i] - vWorldPos;
+            float dist = length(lightVec);
+            L = normalize(lightVec);
+
+            //Point-ish falloff so local lights dont light half the galaxy by accident//
+            atten = 1.0 / (1.0 + 0.025 * dist + 0.004 * dist * dist);
+
+            if (lightType == 0)
+            {
+                float cosTheta = dot(normalize(-L), normalize(uLightDir[i]));
+                spot = smoothstep(uLightOuterCos[i], uLightInnerCos[i], cosTheta);
+            }
+        }
 
         vec3 lightCol = uLightColor[i] * uLightIntensity[i] * atten;
 
@@ -159,11 +178,6 @@ void main()
         vec3 R = reflect(-L, N);
         float spec = pow(max(dot(V, R), 0.0), uShininess);
         vec3 specular = (uSpecStrength * spec * specMask) * lightCol;
-
-        // spotlight factor
-        // Use -L because L points fragment -> light, but spotlight direction is light -> outward
-        float cosTheta = dot(normalize(-L), normalize(uLightDir[i]));
-        float spot = smoothstep(uLightOuterCos[i], uLightInnerCos[i], cosTheta);
 
         diffuse *= spot;
         specular *= spot;

@@ -46,7 +46,7 @@ namespace SceneSerializer
             std::filesystem::create_directories(p.parent_path());
 
         json root;
-        root["version"] = 1;
+        root["version"] = 2;
         std::unordered_set<std::string> usedMeshes;
         std::unordered_set<std::string> usedTextures;
 
@@ -68,6 +68,7 @@ namespace SceneSerializer
             root["lights"].push_back({
                 {"position", Vec3ToJson(L.position)},
                 {"rotation", Vec3ToJson(L.rotation)},
+                {"type", (int)L.type},
                 {"innerAngle", L.innerAngle},
                 {"outerAngle", L.outerAngle},
                 {"color", Vec3ToJson(L.color)},
@@ -176,6 +177,7 @@ namespace SceneSerializer
                 Light L;
                 L.position        = JsonToVec3(jl.value("position", json{}), L.position);
                 L.rotation        = JsonToVec3(jl.value("rotation", json{}), L.rotation);
+                L.type            = (LightType)jl.value("type", (int)L.type);
                 L.innerAngle      = jl.value("innerAngle", L.innerAngle);
                 L.outerAngle      = jl.value("outerAngle", L.outerAngle);
                 L.color           = JsonToVec3(jl.value("color", json{}), L.color);

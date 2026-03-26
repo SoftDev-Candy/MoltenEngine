@@ -21,6 +21,7 @@ Note : This document is not final and is subject to change as the project progre
 | 9 | [Lifetime and shutdown](#9-lifetime--shutdown-avoiding-leaks-and-gl-traps) | Clearing managers before GL context dies |
 | 10 | [Showcase snippets](#10-where-to-showcase-code-snippets-proudly) | Where to paste “proud code” blocks |
 | 11 | [Limitations and next steps](#11-known-limitations--next-steps) | Honest gaps + logical future upgrades |
+| 12 | [2026 upgrade snapshot](#12-2026-upgrade-snapshot) | Gameplay, gizmos, lighting, and editor upgrades |
 
 ---
 
@@ -66,13 +67,19 @@ MoltenEngine uses an editor-style frame loop:
 **See:** [`../src/EngineContext.cpp`](../src/EngineContext.cpp)
 
 ### Update (every frame)
-- Poll input (camera movement)
+- Poll input (camera movement / play controls)
 - Start ImGui frame
-- Draw Editor UI windows (Hierarchy, Inspector, Assets, Camera)
-- UI pushes messages (create/delete/import/assign)
+- Draw either editor UI or play HUD depending on engine mode
+- UI pushes messages (create/delete/import/assign/play/stop)
 - Engine pops and executes messages (mutating Scene + Managers)
+- Run either editor camera controls or `SplineShooterGame`
 
 **Why:** UI stays lightweight and doesn’t own core rules. It can be rewritten later without breaking the engine.
+
+### Mode split (editor vs play)
+- **Editor mode** draws the docked editor windows, gizmos, lights panel, and asset browser
+- **Play mode** hides editor panels and only draws the game HUD / main menu overlay
+- Messages are flushed before the main editor/game logic so `Play` / `Stop` applies immediately that frame
 
 **See:**
 - UI logic: [`../src/ui/UIManager.cpp`](../src/ui/UIManager.cpp)
@@ -99,7 +106,7 @@ This repo is split into “engine core”, “editor UI”, “assets/managers�
 - `progress/*.gif` (great for README / demo)
 
 ### External dependencies
-- `external/glfw`, `external/glad`, `external/glm`, `external/imgui`, `external/stb`
+- `external/glfw`, `external/glad`, `external/glm`, `external/imgui`, `external/ImGuizmo`, `external/stb`
 
 ### Engine overview [links[↗]]
 | Area                     | Responsibility                                                                  | Key files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -111,6 +118,7 @@ This repo is split into “engine core”, “editor UI”, “assets/managers�
 | **Managers**             | Caching + ownership (load once, reuse handles, manage lifetime)                 | [`../src/MeshManager.cpp`](../src/MeshManager.cpp)<br>[`../src/MeshManager.hpp`](../src/MeshManager.hpp)<br><br>[`../src/TextureManager.cpp`](../src/TextureManager.cpp)<br>[`../src/TextureManager.hpp`](../src/TextureManager.hpp)                                                                                                                                                                                                                                                                                 |
 | **Editor**               | UI windows + widgets + theme (ImGui layer)                                      | [`../src/ui/UIManager.cpp`](../src/ui/UIManager.cpp)<br>[`../src/ui/UIManager.hpp`](../src/ui/UIManager.hpp)<br><br>[`../src/ui/EditorStyle.cpp`](../src/ui/EditorStyle.cpp)<br>[`../src/ui/EditorStyle.hpp`](../src/ui/EditorStyle.hpp)<br><br>[`../src/ui/EditorWidgets.cpp`](../src/ui/EditorWidgets.cpp)<br>[`../src/ui/EditorWidgets.hpp`](../src/ui/EditorWidgets.hpp)                                                                                                 |
 | **Messages**             | Commands from UI → engine (decouple UI actions from core logic)                 | [`../src/message/Message.hpp`](../src/message/Message.hpp)<br>[`../src/message/MessageQueue.hpp`](../src/message/MessageQueue.hpp)<br><br>Concrete messages: `CreateEntityMessage`, `DeleteEntityMessage`, `ImportMeshMessage`, `ImportTextureMessage`, `SetEntityMeshMessage`, `SetEntityTextureMessage`                                                                                                                                                                                                                                                    |
+| **Gameplay**             | Spline shooter runtime logic + play HUD + round flow                            | [`../game/Game.cpp`](../game/Game.cpp)<br>[`../game/Game.hpp`](../game/Game.hpp)<br><br>[`../game/GameUI.cpp`](../game/GameUI.cpp)<br>[`../game/GameUI.hpp`](../game/GameUI.hpp)                                                                                                                                                                                                                                                                                                                                 |
 
 
 ---
@@ -271,6 +279,18 @@ Edits selected object:
 - Lists loaded meshes/textures
 - Supports drag payloads
 
+### New editor tooling
+- **ImGuizmo** is used for translate / rotate / scale in the main scene window
+- **Lights window** can add/delete lights, edit spotlight values, and apply a spline-shooter light preset
+- **Scene Hierarchy** can create cubes, empty objects, and auto-numbered `SplinePoint_0..N`
+- **Asset browser** now has loaded assets + project browser tabs, source paths, search, quick import, and drag/drop assignment
+- **Empty objects** render with editor helper shapes so spline points and placeholders are visible in the scene
+
+### Play HUD separation
+- Editor UI is not drawn in Play mode
+- Play mode uses `UIManager::DrawPlayHUD(...)`, which delegates the actual layout to `game/GameUI.cpp`
+- The play overlay shows a small in-game HUD while playing and a centered menu card for start / win / lose states
+
 ---
 
 ## 8. Message system (UI asks, Engine does)
@@ -305,6 +325,42 @@ OpenGL resources should be deleted **before the OpenGL context is destroyed**.
 
 **Enforced in:** `EngineContext::Terminate()`  
 **See:** [`../src/EngineContext.cpp`](../src/EngineContext.cpp)
+
+---
+
+## 12. 2026 upgrade snapshot
+
+This section is the “what the engine actually does now” cheat sheet.
+
+### Gameplay layer
+- `SplineShooterGame` is the current game-side runtime layer
+- Supports `Start`, `Playing`, `Win`, and `Lose`
+- Win triggers when the player reaches the end of the spline
+- Player movement supports both spline-follow and free-fly modes
+- Runtime-only bullets, obstacles, and backdrop asteroids are spawned and cleaned without polluting saved scenes
+
+### Spline path rules
+- Control points are collected from scene objects named `SplinePoint_0 .. SplinePoint_n`
+- Points are sorted by numeric suffix before Catmull-Rom sampling
+- Player follows the spline centerline, then applies lane offsets for dodge movement
+- Camera now uses a separate rail-follow rig so player strafing does not yank the whole camera sideways
+
+### Asteroid variants
+- Two asteroid meshes are supported in gameplay: `Asteroid_1d` and `Asteroid_1c`
+- Primary asteroid uses `Asteroid1d_Color_1K`
+- Secondary asteroid uses `9SliceTableTexture` + `9SliceTableTexture_Specular`
+- Current shader does not consume a normal map yet, so `9SliceTableTexture_Normal` is imported for future use but not rendered as a normal-mapped material
+- Primary asteroid hits harder (double contact damage), secondary asteroid is the lighter 1-damage variant
+
+### Space feel and lighting
+- Play mode uses a follow light that sits behind and above the player, points forward, and restores the editor light state on stop
+- Runtime backdrop asteroids are spawned around the spline so the player reads as flying through an asteroid field instead of empty space
+- Clear color was pushed darker to feel more space-like
+
+### Asset and scene stability
+- Scene serialization remains key-based (`meshKey`, `textureKey`, `albedoKey`, `specularKey`)
+- Raw mesh / texture pointers are rebound after load through the managers
+- Auto-import helpers now pick up gameplay assets like asteroid meshes and play textures when those files exist in the project assets folder
 
 ---
 

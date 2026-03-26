@@ -55,18 +55,33 @@ static float WrapAngleDegreesSigned(float angleDegrees)
     return wrappedAngle;
 }
 
-static Light MakeSplineShooterLightPreset()
+static Light MakeSceneSunLightPreset()
 {
-    Light splineShooterLight;
-    //This is our "space sun" basically: one chunky dramatic key light so the ship reads nicely without a whole Pixar setup//
-    splineShooterLight.position = glm::vec3(6.5f, 8.0f, 4.0f);
-    splineShooterLight.rotation = glm::vec3(-38.0f, -128.0f, 0.0f);
-    splineShooterLight.innerAngle = 18.0f;
-    splineShooterLight.outerAngle = 30.0f;
-    splineShooterLight.color = glm::vec3(1.0f, 0.97f, 0.90f);
-    splineShooterLight.intensity = 3.8f;
-    splineShooterLight.ambientStrength = 0.18f;
-    return splineShooterLight;
+    Light sceneSunLight;
+    //This is the actual editor sunlight now: broad directional fill so the whole scene stops looking like it owes darkness money//
+    sceneSunLight.type = LightType::Directional;
+    sceneSunLight.position = glm::vec3(10.0f, 16.0f, 10.0f);
+    sceneSunLight.rotation = glm::vec3(-48.0f, -132.0f, 0.0f);
+    sceneSunLight.innerAngle = 60.0f;
+    sceneSunLight.outerAngle = 88.0f;
+    sceneSunLight.color = glm::vec3(1.0f, 0.98f, 0.93f);
+    sceneSunLight.intensity = 2.1f;
+    sceneSunLight.ambientStrength = 0.45f;
+    return sceneSunLight;
+}
+
+static Light MakePlayFollowLightPreset()
+{
+    Light playFollowLight;
+    playFollowLight.type = LightType::Spot;
+    playFollowLight.position = glm::vec3(0.0f, 0.0f, 0.0f);
+    playFollowLight.rotation = glm::vec3(-28.0f, -90.0f, 0.0f);
+    playFollowLight.innerAngle = 30.0f;
+    playFollowLight.outerAngle = 54.0f;
+    playFollowLight.color = glm::vec3(1.0f, 0.96f, 0.90f);
+    playFollowLight.intensity = 4.8f;
+    playFollowLight.ambientStrength = 0.12f;
+    return playFollowLight;
 }
 
 static glm::vec3 SafeNormalizeDirection(const glm::vec3& direction, const glm::vec3& fallbackDirection)
@@ -118,10 +133,23 @@ static std::string FindModelPathByStemPrefix(const fs::path& modelsDirectory, co
     return "";
 }
 
+static bool FileExistsSafe(const std::string& path)
+{
+    return fs::exists(fs::path(path));
+}
+
 // Save current editor state
 bool EngineContext::SaveScene(const std::string& path)
 {
-return SceneSerializer::Save(path, scene, camera, mipmapsEnabled_, shadowsEnabled_, meshmanager, textureManager);}
+    return SceneSerializer::Save(
+        path,
+        scene,
+        camera,
+        mipmapsEnabled_,
+        shadowsEnabled_,
+        meshmanager,
+        textureManager);
+}
 
 bool EngineContext::LoadScene(const std::string& path)
 {
@@ -260,31 +288,39 @@ void EngineContext::StartGame()
         resolvedSecondaryAsteroidMeshKey = resolvedAsteroidMeshKey;
     }
 
+    Mesh* resolvedBulletMesh = meshmanager.Get("Asteroid_2f_small");
+    std::string resolvedBulletMeshKey = "Asteroid_2f_small";
+    if (resolvedBulletMesh == nullptr)
+    {
+        resolvedBulletMesh = cubeMesh;
+        resolvedBulletMeshKey = "Cube";
+    }
+
     splineGame_.SetPlayerShipMesh(resolvedPlayerMesh, resolvedPlayerMeshKey);
     splineGame_.SetAsteroidMesh(resolvedAsteroidMesh, resolvedAsteroidMeshKey);
     splineGame_.SetSecondaryAsteroidMesh(resolvedSecondaryAsteroidMesh, resolvedSecondaryAsteroidMeshKey);
+    splineGame_.SetPrimaryAsteroidMaterial(
+        textureManager.Get("Asteroid1d_Color_1K"),
+        textureManager.Get("Asteroid1d_Color_1K") != nullptr ? "Asteroid1d_Color_1K" : "Default",
+        textureManager.Get("Asteroid1d_Color_1K"),
+        textureManager.Get("Asteroid1d_Color_1K") != nullptr ? "Asteroid1d_Color_1K" : "Default");
+    splineGame_.SetSecondaryAsteroidMaterial(
+        textureManager.Get("9SliceTableTexture"),
+        textureManager.Get("9SliceTableTexture") != nullptr ? "9SliceTableTexture" : "Default",
+        textureManager.Get("9SliceTableTexture_Specular"),
+        textureManager.Get("9SliceTableTexture_Specular") != nullptr ? "9SliceTableTexture_Specular" : "Default");
+    splineGame_.SetBulletVisual(
+        resolvedBulletMesh,
+        resolvedBulletMeshKey,
+        textureManager.Get("D5Weapon") != nullptr ? textureManager.Get("D5Weapon") : textureManager.Get("Default"),
+        textureManager.Get("D5Weapon") != nullptr ? "D5Weapon" : "Default");
     splineGame_.SyncViewAngles(camera.rotation.y, camera.rotation.x);
 
     playFollowLightIndex_ = -1;
     playFollowLightAdded_ = false;
-    playFollowLightHadOriginal_ = false;
-
-    if (scene.GetLights().empty())
-    {
-        playFollowLightIndex_ = scene.AddLight();
-        playFollowLightAdded_ = true;
-    }
-    else
-    {
-        playFollowLightIndex_ = 0;
-        playFollowLightHadOriginal_ = true;
-        cachedPlayFollowLight_ = scene.GetLights()[0];
-    }
-
-    if (playFollowLightIndex_ >= 0 && playFollowLightIndex_ < (int)scene.GetLights().size())
-    {
-        scene.GetLights()[playFollowLightIndex_] = MakeSplineShooterLightPreset();
-    }
+    playFollowLightIndex_ = scene.AddLight();
+    playFollowLightAdded_ = true;
+    scene.GetLights()[playFollowLightIndex_] = MakePlayFollowLightPreset();
 
     mode_ = EngineMode::Play;
     firstMouse = true;
@@ -307,15 +343,10 @@ void EngineContext::StopGame()
         {
             scene.RemoveLight(playFollowLightIndex_);
         }
-        else if (playFollowLightHadOriginal_ && playFollowLightIndex_ < (int)scene.GetLights().size())
-        {
-            scene.GetLights()[playFollowLightIndex_] = cachedPlayFollowLight_;
-        }
     }
 
     playFollowLightIndex_ = -1;
     playFollowLightAdded_ = false;
-    playFollowLightHadOriginal_ = false;
     mouseLookActive = false;
     firstMouse = true;
     toggleControlModeKeyWasDown_ = false;
@@ -631,6 +662,22 @@ void EngineContext::init()
     renderer.SetDefaultTexture(texture); //fallback if entity has no texture (shouldn't happen now)
     splineGame_.BindAssets(cubeMesh, texture); //Feed the game layer its starter pack so Play mode has real toys//
 
+    auto tryAutoImportTextureIfPresent = [this](const std::string& textureKey, const std::string& texturePath)
+    {
+        if (textureManager.Has(textureKey) || !FileExistsSafe(texturePath))
+        {
+            return;
+        }
+
+        ImportTexture(textureKey, texturePath);
+    };
+
+    tryAutoImportTextureIfPresent("Asteroid1d_Color_1K", "../assets/Asteroid1d_Color_1K.png");
+    tryAutoImportTextureIfPresent("9SliceTableTexture", "../assets/9SliceTableTexture.png");
+    tryAutoImportTextureIfPresent("9SliceTableTexture_Normal", "../assets/9SliceTableTexture_Normal.png");
+    tryAutoImportTextureIfPresent("9SliceTableTexture_Specular", "../assets/9SliceTableTexture_Specular.png");
+    tryAutoImportTextureIfPresent("D5Weapon", "../assets/d5weapon.png");
+
     ObjMeshData imported = LoadOBJ("../assets/models/d5class.obj", false);
     //Light GIZMO singular call here //
 
@@ -664,6 +711,7 @@ void EngineContext::init()
     //These asteroid files had Windows duplicate-name nonsense, so we find them by prefix and move on with our lives//
     tryAutoImportModelByPrefix("Asteroid_1d", "Asteroid_1d");
     tryAutoImportModelByPrefix("Asteroid_1c", "Asteroid_1c");
+    tryAutoImportModelByPrefix("Asteroid_2f_small", "Asteroid_2f_small");
 
     //Give the light its own little direction arrow so we stop guessing where the poor thing is aiming//
     ObjMeshData lightGizmoImported = LoadOBJ("../assets/models/LightGizmo.obj", false);
@@ -686,6 +734,16 @@ void EngineContext::init()
         renderer.SetSelectionGizmoArrowMesh(meshmanager.Get("Cube"));
     }
     renderer.SetSelectionGizmoMesh(meshmanager.Get("Cube"));
+
+    if (scene.GetLights().empty())
+    {
+        scene.AddLight();
+    }
+
+    if (!scene.GetLights().empty())
+    {
+        scene.GetLights()[0] = MakeSceneSunLightPreset();
+    }
 
     lastTime = glfwGetTime();
 
@@ -1141,6 +1199,7 @@ void EngineContext::UpdatePlayFollowLight()
     }
 
     Light& playFollowLight = scene.GetLights()[playFollowLightIndex_];
+    playFollowLight.type = LightType::Spot;
     glm::vec3 forwardDirection = SafeNormalizeDirection(
         splineGame_.GetForwardDirection(),
         glm::vec3(0.0f, 0.0f, -1.0f));
@@ -1150,24 +1209,30 @@ void EngineContext::UpdatePlayFollowLight()
 
     glm::vec3 lightPosition =
         playerObject->transform.position -
-        forwardDirection * 3.4f +
-        upDirection * 2.6f;
+        forwardDirection * 6.4f +
+        upDirection * 7.4f;
     glm::vec3 lightTarget =
         playerObject->transform.position +
-        forwardDirection * 9.0f +
-        upDirection * 0.35f;
+        forwardDirection * 18.0f +
+        upDirection * 1.8f;
 
     playFollowLight.position = lightPosition;
-    playFollowLight.innerAngle = 20.0f;
-    playFollowLight.outerAngle = 34.0f;
-    playFollowLight.intensity = 4.0f;
-    playFollowLight.ambientStrength = 0.18f;
+    playFollowLight.innerAngle = 32.0f;
+    playFollowLight.outerAngle = 56.0f;
+    playFollowLight.intensity = 4.8f;
+    playFollowLight.ambientStrength = 0.12f;
     AimLightAlongDirection(playFollowLight, lightTarget - lightPosition);
 }
 
 SceneObject * EngineContext::FindObject(Entity e)
 {
     for (auto& o : scene.GetObjects())
-    if (o.entity.Id == e.Id) return &o;
+    {
+        if (o.entity.Id == e.Id)
+        {
+            return &o;
+        }
+    }
+
     return nullptr;
 }
