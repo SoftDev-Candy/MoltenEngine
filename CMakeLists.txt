@@ -112,10 +112,6 @@ add_executable(MoltenEngine src/main.cpp
         game/GameUI.hpp
 )
 
-add_executable(SplineShooter
-        game/Game.cpp
-        game/Game.hpp
-)
 find_package(OpenGL REQUIRED)
 
 target_link_libraries( MoltenEngine PRIVATE
@@ -123,6 +119,10 @@ target_link_libraries( MoltenEngine PRIVATE
         glfw
         glad
 )
+
+if (WIN32)
+    target_compile_definitions(MoltenEngine PRIVATE NOMINMAX)
+endif()
 
 target_include_directories(MoltenEngine PRIVATE
         external/glad/include
